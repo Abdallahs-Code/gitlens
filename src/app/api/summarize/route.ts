@@ -94,9 +94,17 @@ export async function POST(req: NextRequest) {
     const summary = result.response.text();
 
     return NextResponse.json({ summary });
-  } catch (error: any) {
-    return NextResponse.json({ 
-      error: error.message || "Something went wrong generating the summary" 
-    }, { status: 500 });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(
+      { error: "Something went wrong generating the summary" },
+      { status: 500 }
+    );
   }
 }

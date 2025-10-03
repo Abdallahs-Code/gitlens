@@ -31,8 +31,8 @@ export async function GET(req: NextRequest, context: { params: Promise<{ usernam
     };
 
     const reposRes = await githubFetch(`https://api.github.com/users/${username}/repos`);
-    const repos = await reposRes.json();
-    const filteredRepos: GitHubRepo[] = repos.map((repo: any) => ({
+    const repos: GitHubRepo[] = await reposRes.json();
+    const filteredRepos: GitHubRepo[] = repos.map((repo) => ({
       name: repo.name,
       html_url: repo.html_url,
       description: repo.description,
