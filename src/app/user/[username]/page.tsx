@@ -206,11 +206,11 @@ export default function UserProfilePage() {
               <span>Repos: {profile.public_repos}</span>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2 justify-end">
+          <div className="flex flex-wrap gap-y-2 gap-x-4 justify-end">
             <button
               onClick={handleCompare}
               disabled={compareLoading}
-              className="btn-primary w-full sm:w-auto whitespace-nowrap disabled:opacity-50"
+              className="btn-primary w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
             >
               {compareLoading ? "Redirecting..." : "Compare"}
             </button>
@@ -240,7 +240,7 @@ export default function UserProfilePage() {
         <section className="mt-8">
           <button
             onClick={() => setShowNotes((prev) => !prev)}
-            className="btn-secondary w-full sm:w-auto mb-4"
+            className="btn-secondary w-full sm:w-auto text-sm text-center mb-3"
           >
             <span>{showNotes ? "Hide" : "GitLens community thoughts"}</span>
             <span className="bg-accent text-white text-xs px-2 py-0.5 rounded-full">
@@ -276,7 +276,7 @@ export default function UserProfilePage() {
                   e.preventDefault();
                   handleAddNote(null);
                 }}
-                className="mt-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2"
+                className="mt-3 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2"
               >
                 <input
                   type="text"
@@ -301,7 +301,7 @@ export default function UserProfilePage() {
         <ul className="space-y-3">
           {repos.map((repo) => (
             <li key={repo.name} className="card-compact">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+              <div className="flex flex-row justify-between items-center flex-wrap">
                 <a
                   href={repo.html_url}
                   target="_blank"
@@ -310,7 +310,7 @@ export default function UserProfilePage() {
                 >
                   {repo.name}
                 </a>
-                <span className="text-xs text-text-muted mt-1 sm:mt-0">
+                <span className="text-xs text-text-muted ml-2 whitespace-nowrap">
                   {formatDate(repo.updated_at)}
                 </span>
               </div>
@@ -326,7 +326,7 @@ export default function UserProfilePage() {
                   onClick={() =>
                     setShowRepoNotes((prev) => ({ ...prev, [repo.name]: !prev[repo.name] }))
                   }
-                  className="btn-secondary w-full sm:w-auto text-sm"
+                  className="btn-secondary w-full sm:w-auto text-sm text-center"
                 >
                   <span>
                     {showRepoNotes[repo.name] ? "Hide" : "GitLens community thoughts"}
@@ -359,7 +359,7 @@ export default function UserProfilePage() {
                       e.preventDefault();
                       handleAddNote(repo.name);
                     }}
-                    className="mt-2 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2"
+                    className="mt-3 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2"
                   >
                     <input
                       type="text"
@@ -386,7 +386,7 @@ export default function UserProfilePage() {
         <div className="mt-6 mb-2 text-center">
           <button
             onClick={() => router.push('/')}
-            className="btn-primary w-full sm:w-auto"
+            className="btn-primary sm:w-auto"
             suppressHydrationWarning
           >
             Return to home page
