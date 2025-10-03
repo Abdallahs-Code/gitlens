@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSearchParams } from 'next/navigation';
 import { compareUsers } from '@/lib/api'; 
 import { GitHubProfileComparison } from '@/types'; 
 
-export default function ComparePage() {
+function CompareContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -39,7 +39,7 @@ export default function ComparePage() {
       const comparison = result.comparison;
       setUser1Data(comparison[user1]);
       setUser2Data(comparison[user2Input.trim()]);
-    } catch (err) {
+    } catch {
       setError('Failed to compare users. Please check the username and try again.');
       setUser1Data(null);
       setUser2Data(null);
@@ -178,5 +178,13 @@ export default function ComparePage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function ComparePage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center">Loading comparison...</div>}>
+      <CompareContent />
+    </Suspense>
   );
 }

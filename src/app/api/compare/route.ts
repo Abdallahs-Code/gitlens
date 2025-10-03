@@ -1,14 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { githubFetch } from '@/lib/api';
 import { GitHubProfile, GitHubRepo } from '@/types';
-
-async function githubFetch(url: string) {
-  const headers = {
-    Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
-    Accept: "application/vnd.github+json",
-  };
-
-  return fetch(url, { headers });
-}
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -91,7 +83,7 @@ export async function GET(req: NextRequest) {
     };
 
     return NextResponse.json({ comparison });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
   }
 }

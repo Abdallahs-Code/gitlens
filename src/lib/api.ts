@@ -3,6 +3,15 @@ import { GitHubProfile, GitHubRepo, GitHubProfileComparison, Note } from "@/type
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
+export async function githubFetch(url: string) {
+  const headers = {
+    Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+    Accept: "application/vnd.github+json",
+  };
+
+  return fetch(url, { headers });
+}
+
 export const fetchUserData = async (username: string): Promise<{ profile: GitHubProfile; repos: GitHubRepo[] }> => {
   const { data } = await axios.get(`${API_BASE}/api/users/${username}`);
   return {
@@ -12,8 +21,7 @@ export const fetchUserData = async (username: string): Promise<{ profile: GitHub
 };
 
 export const fetchNotes = async (
-  username: string,
-  repoName?: string
+  username: string
 ): Promise<Note[]> => {
   const url = `${API_BASE}/api/notes?username=${username}`;
   const { data } = await axios.get(url);

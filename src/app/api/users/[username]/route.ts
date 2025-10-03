@@ -1,14 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { githubFetch } from '@/lib/api';
 import { GitHubProfile, GitHubRepo } from '@/types';
-
-export async function githubFetch(url: string) {
-  const headers = {
-    Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
-    Accept: "application/vnd.github+json",
-  };
-
-  return fetch(url, { headers });
-}
 
 export async function GET(req: NextRequest, context: { params: Promise<{ username: string }> }) {
   const { username } = await context.params;
@@ -43,7 +35,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ usernam
     }));
 
     return NextResponse.json({ filteredProfile, filteredRepos });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 });
   }
 }
