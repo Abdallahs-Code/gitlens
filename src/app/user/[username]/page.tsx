@@ -199,7 +199,9 @@ export default function UserProfilePage() {
           />
           <div className="flex-1">
             <h1 className="text-2xl font-bold text-text-primary">{profile.name || profile.login}</h1>
-            <p className="text-text-secondary">{profile.bio}</p>
+            <p className="text-text-secondary text-center sm:text-left">
+              {profile.bio}
+            </p>
             <div className="flex space-x-4 text-sm text-text-muted mt-2">
               <span>Followers: {profile.followers}</span>
               <span>Following: {profile.following}</span>
