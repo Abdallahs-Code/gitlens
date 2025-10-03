@@ -1,26 +1,167 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-background: #2a2a2a;
+  --color-surface: #3a3a3a;
+  --color-surface-hover: #454545;
+  --color-border: #4a4a4a;
+  --color-border-hover: #5a5a5a;
+  
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #d4d4d4;
+  --color-text-muted: #a0a0a0;
+  
+  --color-accent: #0066ff;
+  --color-accent-hover: #0052cc;
+  
+  --color-success: #6cb76c;
+  --color-warning: #e6b352;
+  --color-error: #d96c6c;
+  --color-info: #5b9bd5;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+* {
+  border-color: var(--color-border);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+a {
+  color: var(--color-accent);
+  transition: color 0.2s;
+}
+
+a:hover {
+  color: var(--color-accent-hover);
+}
+
+::-webkit-scrollbar {
+  width: 0.5rem;
+  height: 0.5rem;
+}
+
+::-webkit-scrollbar-track {
+  background-color: var(--color-background);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-border);
+  border-radius: 0.25rem;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-border-hover);
+}
+
+.bg-background {
+  background-color: var(--color-background) !important;
+}
+
+.bg-surface {
+  background-color: var(--color-surface) !important;
+}
+
+.text-text-primary {
+  color: var(--color-text-primary) !important;
+}
+
+.text-text-secondary {
+  color: var(--color-text-secondary) !important;
+}
+
+.text-text-muted {
+  color: var(--color-text-muted) !important;
+}
+
+.input-field {
+  background-color: var(--color-surface) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 9999px !important;
+  padding: 0.5rem 1rem !important;
+  width: 100% !important;
+  color: var(--color-text-primary) !important;
+  outline: none !important;
+}
+
+.input-field:focus {
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 2px rgba(91, 155, 213, 0.2) !important;
+}
+
+.input-field::placeholder {
+  color: var(--color-text-muted) !important;
+}
+
+.btn-primary {
+  background-color: var(--color-accent) !important;
+  color: white !important;
+  padding: 0.5rem 1.5rem !important;
+  border-radius: 9999px !important;
+  font-weight: 500 !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+  border: none !important;
+  transition: background-color 0.2s !important;
+}
+
+.btn-primary:hover {
+  background-color: var(--color-accent-hover) !important;
+}
+
+.btn-secondary {
+  background-color: var(--color-surface) !important;
+  color: var(--color-text-primary) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 9999px !important;
+  padding: 0.5rem 0.75rem !important; 
+  font-size: 0.875rem !important; 
+  font-weight: 500 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important; 
+  cursor: pointer !important;
+  transition: background-color 0.2s ease, border-color 0.2s ease !important;
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-surface-hover) !important;
+}
+
+.btn-secondary:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+.card {
+  background-color: var(--color-surface) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 0.5rem !important;
+  padding: 1.5rem !important;
+  transition: border-color 0.2s !important;
+}
+
+.card-compact {
+  background-color: var(--color-surface) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 0.5rem !important;
+  padding: 1rem !important;
+  transition: border-color 0.2s !important;
+}
+
+.card:hover {
+  border-color: var(--color-border-hover) !important;
 }
