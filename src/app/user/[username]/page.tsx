@@ -226,7 +226,7 @@ export default function UserProfilePage() {
                         className="bg-surface py-1.5 px-6 rounded text-sm text-text-primary flex justify-between items-center"
                         style={{ border: '1px solid var(--color-border)' }}
                       >
-                        <span>"{note.content}"</span>
+                        <span>&quot;{note.content}&quot;</span>
                         <span className="text-xs text-text-muted ml-4">
                           {formatDate(note.created_at)}
                         </span>
@@ -310,7 +310,7 @@ export default function UserProfilePage() {
                           className="bg-surface py-1.5 px-6 rounded text-sm text-text-primary flex items-center w-full"
                           style={{ border: '1px solid var(--color-border)' }}
                         >
-                          <span className="flex-1 min-w-0 truncate">"{note.content}"</span>
+                          <span className="flex-1 min-w-0 truncate">&quot;{note.content}&quot;</span>
                           <span className="text-xs text-text-muted ml-auto whitespace-nowrap">
                             {formatDate(note.created_at)}
                           </span>
