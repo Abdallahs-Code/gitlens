@@ -206,18 +206,18 @@ export default function UserProfilePage() {
               <span>Repos: {profile.public_repos}</span>
             </div>
           </div>
-          <div className="flex flex-wrap gap-y-2 gap-x-4 justify-end">
+          <div className="flex flex-wrap gap-2 justify-end px-4 sm:px-0">
             <button
               onClick={handleCompare}
               disabled={compareLoading}
-              className="btn-primary w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              className="btn-primary flex-1 sm:flex-none sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
             >
               {compareLoading ? "Redirecting..." : "Compare"}
             </button>
             <button
               onClick={handleSummarize}
               disabled={summaryLoading}
-              className="btn-primary w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              className="btn-primary flex-1 sm:flex-none sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
             >
               {summaryLoading ? "Summarizing..." : "Summarize with AI"}
             </button>
@@ -240,7 +240,7 @@ export default function UserProfilePage() {
         <section className="mt-8">
           <button
             onClick={() => setShowNotes((prev) => !prev)}
-            className="btn-secondary w-full sm:w-auto text-sm text-center mb-3"
+            className="btn-secondary w-full sm:w-auto text-sm text-center mb-3 flex items-center justify-center gap-2"
           >
             <span>{showNotes ? "Hide" : "GitLens community thoughts"}</span>
             <span className="bg-accent text-white text-xs px-2 py-0.5 rounded-full">
@@ -326,7 +326,7 @@ export default function UserProfilePage() {
                   onClick={() =>
                     setShowRepoNotes((prev) => ({ ...prev, [repo.name]: !prev[repo.name] }))
                   }
-                  className="btn-secondary w-full sm:w-auto text-sm text-center"
+                  className="btn-secondary w-full sm:w-auto text-sm text-center flex items-center justify-center gap-2"
                 >
                   <span>
                     {showRepoNotes[repo.name] ? "Hide" : "GitLens community thoughts"}
