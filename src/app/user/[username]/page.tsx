@@ -3,7 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import type { GitHubProfile, GitHubRepo, Note } from "@/types";
 import { fetchUserData, fetchNotes, addNote, summarizeProfile } from "@/lib/api";
-import axios, { AxiosError } from "axios";
+import axios from "axios";
 import { useState, useEffect } from "react";
 
 export default function UserProfilePage() {
@@ -156,7 +156,12 @@ export default function UserProfilePage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen text-center">
         <p className="p-6 text-error">{error}</p>
-        <a href="/" className="btn-primary mt-1">Return</a>
+        <button
+          onClick={() => router.push("/")}
+          className="btn-primary mt-1"
+        >
+          Return
+        </button>
       </div>
     );
   }
@@ -164,7 +169,12 @@ export default function UserProfilePage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen text-center">
         <p className="p-6 text-text-primary">No data found</p>
-        <a href="/" className="btn-primary mt-1">Return</a>
+        <button
+          onClick={() => router.push("/")}
+          className="btn-primary mt-1"
+        >
+          Return
+        </button>
       </div>
     );
   }
