@@ -1,4 +1,4 @@
-Setup
+## Setup
 	- install required packages (supabase.. )
 	- create a supabase project with a (notes) table, columns ↓
 		id           uuid   
@@ -14,10 +14,8 @@ Setup
 		assign supabase anon key (NEXT_PUBLIC_SUPABASE_ANON_KEY)
 		assign the base url (NEXT_PUBLIC_API_URL)
 
-Run
+## Run
 	- npm run dev
 
-Notes
+## Notes
 	- Technologies used are not optimal however the best for free usage
-
-	
