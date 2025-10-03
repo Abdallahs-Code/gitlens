@@ -1,7 +1,7 @@
 import axios from "axios";
 import { GitHubProfile, GitHubRepo, GitHubProfileComparison, Note } from "@/types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://gitlens-snowy.vercel.ap";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://gitlens-snowy.vercel.app";
 
 export async function githubFetch(url: string) {
   const headers = {
