@@ -5,11 +5,13 @@ import { useRouter } from "next/navigation";
 
 export default function HomePage() {
   const [username, setUsername] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleSearch = (e?: React.FormEvent) => {
-    if (e) e.preventDefault(); // prevent page reload
+    if (e) e.preventDefault(); 
     if (username.trim()) {
+      setLoading(true);
       router.push(`/user/${username.trim()}`);
     }
   };
@@ -37,8 +39,9 @@ export default function HomePage() {
           type="submit"
           className="btn-primary"
           suppressHydrationWarning
+          disabled={loading}
         >
-          Search
+          {loading ? "Searching..." : "Search"}
         </button>
       </form>
     </main>
