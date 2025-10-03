@@ -3,6 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import type { GitHubProfile, GitHubRepo, Note } from "@/types";
 import { fetchUserData, fetchNotes, addNote, summarizeProfile } from "@/lib/api";
+import axios, { AxiosError } from "axios";
 import { useState, useEffect } from "react";
 
 export default function UserProfilePage() {
@@ -44,8 +45,13 @@ export default function UserProfilePage() {
         setProfile(data.profile);
         setRepos(data.repos);
       } catch (err) {
-        setError("Error loading profile");
-        console.error(err);
+        if (axios.isAxiosError(err)) {
+          const message: string =
+            err.response?.data?.error ?? "Something went wrong";
+          setError(message); 
+        } else {
+          setError("Unexpected error");
+        }
       } finally {
         setIsLoading(false);
       }
@@ -146,8 +152,22 @@ export default function UserProfilePage() {
   };
 
   if (isLoading) return <Loader />;
-  if (error) return <p className="p-6 text-error">{error}</p>;
-  if (!profile) return <p className="p-6 text-text-primary">No data found</p>;
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen text-center">
+        <p className="p-6 text-error">{error}</p>
+        <a href="/" className="btn-primary mt-1">Return</a>
+      </div>
+    );
+  }
+  if (!profile) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen text-center">
+        <p className="p-6 text-text-primary">No data found</p>
+        <a href="/" className="btn-primary mt-1">Return</a>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
