@@ -4,6 +4,7 @@ import { useState, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSearchParams } from 'next/navigation';
 import { compareUsers } from '@/lib/api'; 
+import { Frown } from "lucide-react";
 import { GitHubProfileComparison } from '@/types'; 
 
 function CompareContent() {
@@ -65,7 +66,7 @@ function CompareContent() {
 
   return (
     <div className="flex flex-col min-h-screen w-full">
-      <main className="flex-grow mt-6 p-6 max-w-2xl w-full mx-auto bg-surface shadow-md rounded-lg mb-8" style={{ border: '1px solid var(--color-border)' }}>
+      <main className="mt-6 p-6 max-w-2xl w-full mx-auto bg-surface shadow-md rounded-lg mb-8" style={{ border: '1px solid var(--color-border)' }}>
         <h1 className="text-2xl font-bold text-text-primary text-center mb-2">
           GitHub Profile Comparison
         </h1>
@@ -96,8 +97,13 @@ function CompareContent() {
             >
               {loading ? 'Comparing...' : 'Compare'}
             </button>
-          </div>
-          {error && <p className="text-error mt-2">{error}</p>}
+          </div> 
+          {error && (
+            <p className="text-error mt-2 flex items-center gap-2 text-lg">
+              <Frown className="w-5 h-5" />
+              {error}
+            </p>
+          )}
         </form>
 
         {user1Data && user2Data && (

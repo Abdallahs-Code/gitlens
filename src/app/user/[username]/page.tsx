@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import type { GitHubProfile, GitHubRepo, Note } from "@/types";
 import { fetchUserData, fetchNotes, addNote, summarizeProfile } from "@/lib/api";
 import axios from "axios";
+import { Frown } from "lucide-react";
 import { useState, useEffect } from "react";
 
 export default function UserProfilePage() {
@@ -154,11 +155,14 @@ export default function UserProfilePage() {
   if (isLoading) return <Loader />;
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen text-center">
-        <p className="p-6 text-error">{error}</p>
+      <div className="flex flex-col items-center justify-center min-h-screen text-center px-4">
+        <p className="p-6 text-error text-2xl flex items-center justify-center gap-2">
+          <Frown className="w-8 h-8" />
+          {error}
+        </p>
         <button
           onClick={() => router.push("/")}
-          className="btn-primary mt-1"
+          className="btn-primary mt-2"
         >
           Return
         </button>
@@ -167,11 +171,14 @@ export default function UserProfilePage() {
   }
   if (!profile) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen text-center">
-        <p className="p-6 text-text-primary">No data found</p>
+      <div className="flex flex-col items-center justify-center min-h-screen text-center px-4">
+        <p className="p-6 text-text-primary text-2xl flex items-center justify-center gap-2">
+          <Frown className="w-8 h-8" />
+          No data found
+        </p>
         <button
           onClick={() => router.push("/")}
-          className="btn-primary mt-1"
+          className="btn-primary mt-2"
         >
           Return
         </button>
@@ -180,7 +187,7 @@ export default function UserProfilePage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen overflow-x-hidden">
       <main className="mt-6 p-6 max-w-4xl mx-auto bg-surface shadow-md rounded-lg mb-8"
         style={{ border: '1px solid var(--color-border)' }}>
         <div className="flex items-center space-x-4 mb-6">
@@ -199,7 +206,7 @@ export default function UserProfilePage() {
               <span>Repos: {profile.public_repos}</span>
             </div>
           </div>
-          <div className="flex space-x-2">
+          <div className="flex flex-wrap gap-2 justify-end">
             <button
               onClick={handleCompare}
               disabled={compareLoading}
@@ -386,8 +393,8 @@ export default function UserProfilePage() {
           </button>
         </div>
       </main>
-      <footer className="mt-auto bg-surface border-t border-border py-4">
-        <div className="max-w-4xl mx-auto text-center text-sm text-text-muted">
+      <footer className="mt-auto bg-surface border-t border-border py-4 w-full">
+        <div className="max-w-4xl mx-auto text-center text-sm text-text-muted px-4">
           © {new Date().getFullYear()} GitLens Community. All rights reserved.
         </div>
       </footer>
