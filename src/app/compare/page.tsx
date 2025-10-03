@@ -92,7 +92,7 @@ function CompareContent() {
             <button
               type="submit"
               disabled={loading || !user1}
-              className="btn-primary"
+              className="btn-primary disabled:opacity-50"
               suppressHydrationWarning
             >
               {loading ? 'Comparing...' : 'Compare'}

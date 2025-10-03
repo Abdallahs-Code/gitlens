@@ -18,8 +18,9 @@ export default function HomePage() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-start pt-60 p-6 bg-background text-text-primary">
-      <h1 className="text-5xl font-extrabold mb-8 text-center">
+      <h1 className="flex items-center text-5xl font-extrabold mb-8 text-center gap-4">
         Welcome to GitLens
+        <img src="/./favicon.ico" alt="Logo" className="w-12 h-12" />
       </h1>
 
       <form 
@@ -37,7 +38,7 @@ export default function HomePage() {
 
         <button
           type="submit"
-          className="btn-primary"
+          className="btn-primary disabled:opacity-50"
           suppressHydrationWarning
           disabled={loading}
         >
