@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GitHubProfile, GitHubRepo } from '@/types';
 
-export async function githubFetch(url: string) {
+async function githubFetch(url: string) {
   const headers = {
     Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
     Accept: "application/vnd.github+json",
