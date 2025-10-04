@@ -197,12 +197,12 @@ export default function UserProfilePage() {
             className="w-20 h-20 rounded-full"
             style={{ border: '2px solid var(--color-border)' }}
           />
-          <div className="flex-1">
+          <div className="flex-1 text-center sm:text-left">
             <h1 className="text-2xl font-bold text-text-primary">{profile.name || profile.login}</h1>
-            <p className="text-text-secondary text-center sm:text-left">
+            <p className="text-text-secondary">
               {profile.bio}
             </p>
-            <div className="flex space-x-4 text-sm text-text-muted mt-2">
+            <div className="flex justify-center sm:justify-start flex-wrap gap-4 text-sm text-text-muted mt-2">
               <span>Followers: {profile.followers}</span>
               <span>Following: {profile.following}</span>
               <span>Repos: {profile.public_repos}</span>
@@ -299,7 +299,7 @@ export default function UserProfilePage() {
           )}
         </section>
 
-        <h2 className="text-xl font-semibold mt-3 mb-4 text-text-primary">Repositories</h2>
+        <h2 className="text-xl font-semibold mt-3 mb-4 text-text-primary text-center sm:text-left">Repositories</h2>
         <ul className="space-y-3">
           {repos.map((repo) => (
             <li key={repo.name} className="card-compact">
