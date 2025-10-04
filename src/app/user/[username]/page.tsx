@@ -8,7 +8,9 @@ import { Frown } from "lucide-react";
 import { useState, useEffect } from "react";
 
 export default function UserProfilePage() {
-  const { username } = useParams<{ username: string }>();
+  const { username: urlUsername } = useParams<{ username: string }>();
+  const [username, setUsername] = useState<string>("");
+
   const router = useRouter();
 
   const [profile, setProfile] = useState<GitHubProfile | null>(null);
@@ -37,14 +39,15 @@ export default function UserProfilePage() {
 
   useEffect(() => {
     const loadUserData = async () => {
-      if (!username) return;
+      if (!urlUsername) return;
 
       setIsLoading(true);
       setError(null);
       try {
-        const data = await fetchUserData(username);
+        const data = await fetchUserData(urlUsername);
         setProfile(data.profile);
         setRepos(data.repos);
+        setUsername(data.profile.login);
       } catch (err) {
         if (axios.isAxiosError(err)) {
           const message: string =
@@ -59,7 +62,7 @@ export default function UserProfilePage() {
     };
 
     loadUserData();
-  }, [username]);
+  }, [urlUsername]);
 
   useEffect(() => {
     const loadNotes = async () => {
