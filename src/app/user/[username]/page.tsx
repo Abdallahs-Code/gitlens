@@ -228,7 +228,7 @@ export default function UserProfilePage() {
 
         {aiSummary && (
           <section className="mb-6 p-4 bg-surface rounded-lg" style={{ border: '1px solid var(--color-border)' }}>
-            <h2 className="text-lg font-semibold mb-2 text-text-primary">AI Summary</h2>
+            <h2 className="text-lg font-semibold mb-2 text-text-primary text-center sm:text-left">AI Summary</h2>
             <p className="text-text-secondary whitespace-pre-wrap">{aiSummary}</p>
           </section>
         )}
