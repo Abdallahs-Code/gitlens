@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
     const prompt = createGitHubSummaryPrompt(profile, repos);
 
     const geminiModel = googleAI.getGenerativeModel({
-      model: "models/gemini-2.5-flash",
+      model: "models/gemini-2.5-flash-lite",
     });
 
     const result = await geminiModel.generateContent(prompt);
