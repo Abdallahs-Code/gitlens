@@ -76,6 +76,7 @@ Full repository list (showing up to 50 repos):
 ${repoListText}
 
 Write a concise, engaging summary (5-7 sentences) about this user and their notable projects, suitable for display on a web app.
+Output plain text only with normal sentences; do not use quotation marks, markdown, or any special formatting.
 `;
 }
 
