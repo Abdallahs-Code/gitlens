@@ -190,8 +190,8 @@ export default function UserProfilePage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen overflow-x-hidden">
-      <main className="mt-4 p-4 sm:p-6 max-w-full sm:max-w-4xl mx-auto bg-surface shadow-md rounded-lg mb-6"
+    <div className="flex flex-col min-h-screen overflow-x-hidden bg-surface">
+      <main className="mt-4 p-4 sm:p-6 max-w-full sm:max-w-4xl mx-auto bg-background shadow-md rounded-lg mb-6"
         style={{ border: '1px solid var(--color-border)' }}>
         <div className="flex flex-col sm:flex-row items-center sm:space-x-4 mb-6 space-y-4 sm:space-y-0">
           <img
@@ -248,7 +248,7 @@ export default function UserProfilePage() {
             className="btn-secondary w-full sm:w-auto text-sm text-center mb-3 flex items-center justify-center gap-2"
           >
             <span>{showNotes ? "Hide" : "GitLens community thoughts"}</span>
-            <span className="bg-accent text-white text-xs px-2 py-0.5 rounded-full">
+            <span className="bg-accent text-black text-xs px-2 py-0.5 rounded-full">
               {notes.filter((note) => note.repo_name === null).length}
             </span>
           </button>
@@ -336,7 +336,7 @@ export default function UserProfilePage() {
                   <span>
                     {showRepoNotes[repo.name] ? "Hide" : "GitLens community thoughts"}
                   </span>
-                  <span className="bg-accent text-white text-xs px-2 py-0.5 rounded-full">
+                  <span className="bg-accent text-black text-xs px-2 py-0.5 rounded-full">
                     {notes.filter((note) => note.repo_name === repo.name).length}
                   </span>
                 </button>
@@ -398,7 +398,7 @@ export default function UserProfilePage() {
           </button>
         </div>
       </main>
-      <footer className="mt-auto bg-surface border-t border-border py-4 w-full">
+      <footer className="mt-auto bg-background border-t border-border py-4 w-full">
         <div className="max-w-4xl mx-auto text-center text-sm text-text-muted px-4">
           © {new Date().getFullYear()} GitLens Community. All rights reserved.
         </div>

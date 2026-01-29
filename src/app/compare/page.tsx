@@ -65,8 +65,8 @@ function CompareContent() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen w-full">
-      <main className="mt-6 p-6 max-w-2xl w-full mx-auto bg-surface shadow-md rounded-lg mb-8" style={{ border: '1px solid var(--color-border)' }}>
+    <div className="flex flex-col min-h-screen w-full bg-surface">
+      <main className="mt-6 p-6 max-w-2xl w-full mx-auto bg-background shadow-md rounded-lg mb-8" style={{ border: '1px solid var(--color-border)' }}>
         <h1 className="text-2xl font-bold text-text-primary text-center mb-2">
           GitHub Profile Comparison
         </h1>
@@ -178,7 +178,7 @@ function CompareContent() {
           </button>
         </div>
       </main>
-      <footer className="mt-auto bg-surface border-t border-border py-4">
+      <footer className="mt-auto bg-background border-t border-border py-4">
         <div className="max-w-4xl mx-auto text-center text-sm text-text-muted">
           © {new Date().getFullYear()} GitLens Community. All rights reserved.
         </div>
