@@ -1,3 +1,6 @@
+## Live Demo
+	- https://gitlens-snowy.vercel.app
+
 ## Setup
 	- install required packages (supabase.. )
 	- create a supabase project with a (notes) table, columns ↓
