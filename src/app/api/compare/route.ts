@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { githubFetch } from '@/lib/api';
-import { GitHubProfile, GitHubRepo } from '@/types';
+import { GitHubProfile, GitHubRepo } from '@/lib/types';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);

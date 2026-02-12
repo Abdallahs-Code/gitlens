@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { githubFetch } from '@/lib/api';
-import { GitHubProfile, GitHubRepo } from '@/types';
+import { GitHubProfile, GitHubRepo } from '@/lib/types';
 
 export async function GET(req: NextRequest, context: { params: Promise<{ username: string }> }) {
   const { username } = await context.params;

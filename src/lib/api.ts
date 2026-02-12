@@ -1,5 +1,5 @@
 import axios from "axios";
-import { GitHubProfile, GitHubRepo, GitHubProfileComparison, Note } from "@/types";
+import { GitHubProfile, GitHubRepo, GitHubProfileComparison, Note } from "@/lib/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://gitlens-snowy.vercel.app";
 

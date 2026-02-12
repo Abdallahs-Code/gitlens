@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useSearchParams } from 'next/navigation';
 import { compareUsers } from '@/lib/api'; 
 import { Frown } from "lucide-react";
-import { GitHubProfileComparison } from '@/types'; 
+import { GitHubProfileComparison } from '@/lib/types'; 
 
 function CompareContent() {
   const searchParams = useSearchParams();

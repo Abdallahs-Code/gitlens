@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GitHubProfile, GitHubRepo } from '@/types';
+import { GitHubProfile, GitHubRepo } from '@/lib/types';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const geminiApiKey = process.env.GEMINI_API_KEY;

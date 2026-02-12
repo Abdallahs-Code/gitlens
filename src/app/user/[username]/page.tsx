@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import type { GitHubProfile, GitHubRepo, Note } from "@/types";
+import type { GitHubProfile, GitHubRepo, Note } from "@/lib/types";
 import { fetchUserData, fetchNotes, addNote, summarizeProfile } from "@/lib/api";
 import axios from "axios";
 import { Frown } from "lucide-react";
