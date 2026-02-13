@@ -1,55 +1,14 @@
-import { TECH_KEYWORDS, ARCH_KEYWORDS, DB_KEYWORDS, CI_CD_KEYWORDS, TESTING_KEYWORDS } from '@/lib/keywords';
+import {
+  extractTechnologies,
+  extractArchitectures,
+  extractDatabases,
+  extractCiCdTools,
+  extractTestingTools,
+  extractSeniority,
+  extractRoles
+} from '@/lib/extractors';
 import { githubFetch } from '@/lib/api';
-
-function extractKeywordsFromCategory(text: string, categoryKeywords: Record<string, string>): string[] {
-  if (!text) return [];
-
-  const normalizedText = text.toLowerCase();
-  const results = new Set<string>();
-
-  for (const rawKey of Object.keys(categoryKeywords)) {
-    const pattern = String(rawKey);
-    const patternName = categoryKeywords[rawKey];
-
-    const escaped = pattern.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp(`\\b${escaped}\\b`, 'i');
-
-    if (regex.test(normalizedText)) {
-      results.add(patternName);
-    }
-  }
-
-  return Array.from(results);
-}
-
-function extractTechnologies(text: string): string[] {
-  const results = new Set<string>();
-
-  for (const categoryKey of Object.keys(TECH_KEYWORDS) as Array<keyof typeof TECH_KEYWORDS>) {
-    const keywords = TECH_KEYWORDS[categoryKey];
-    for (const tech of extractKeywordsFromCategory(text, keywords)) {
-      results.add(tech);
-    }
-  }
-
-  return Array.from(results);
-}
-
-function extractArchitectures(text: string): string[] {
-  return extractKeywordsFromCategory(text, ARCH_KEYWORDS);
-}
-
-function extractDatabases(text: string): string[] {
-  return extractKeywordsFromCategory(text, DB_KEYWORDS);
-}
-
-function extractCiCdTools(text: string): string[] {
-  return extractKeywordsFromCategory(text, CI_CD_KEYWORDS);
-}
-
-function extractTestingTools(text: string): string[] {
-  return extractKeywordsFromCategory(text, TESTING_KEYWORDS);
-}
+import { NextRequest, NextResponse } from 'next/server';
 
 function isRelevantFile(path: string): boolean {
   const lower = path.toLowerCase();
@@ -137,11 +96,41 @@ async function analyzeRepo(repoFullName: string) {
 }
 
 export async function analyzeProfile(username: string) {
+  const userResponse = await githubFetch(
+    `https://api.github.com/users/${username}`
+  );
+  const userJson = await userResponse.json();
+
+  const bio = userJson.bio || '';
+  const company = userJson.company || '';
+  const combinedProfileText = `${bio} ${company}`;
+
   const reposResponse = await githubFetch(
     `https://api.github.com/users/${username}/repos`
   );
   const repos = (await reposResponse.json()) as { full_name: string }[];
 
+  const SENIORITY_PRIORITY = [
+    'Principal',
+    'Staff',
+    'Lead',
+    'Senior',
+    'Mid',
+    'Junior',
+  ] as const;
+
+  const detectedSeniority = extractSeniority(combinedProfileText);
+
+  let finalSeniority = 'Unknown';
+
+  for (const level of SENIORITY_PRIORITY) {
+    if (detectedSeniority.includes(level)) {
+      finalSeniority = level;
+      break;
+    }
+  }
+  
+  const roles = extractRoles(combinedProfileText);
   const profileLanguages = new Map<string, number>();
   const profileTech = new Map<string, number>();
   const profileArch = new Map<string, number>();
@@ -184,6 +173,8 @@ export async function analyzeProfile(username: string) {
 
   return {
     profile: username,
+    seniority: finalSeniority,
+    roles,
     languages: sortMap(profileLanguages),
     tech: sortMap(profileTech),
     architecture: sortMap(profileArch),
@@ -191,4 +182,27 @@ export async function analyzeProfile(username: string) {
     ci_cd: sortMap(profileCiCd),
     testing: sortMap(profileTesting),
   };
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+
+    if (!body.username || typeof body.username !== 'string') {
+      return NextResponse.json(
+        { error: 'Missing or invalid "username" in request body' },
+        { status: 400 }
+      );
+    }
+
+    const result = await analyzeProfile(body.username);
+
+    return NextResponse.json({ success: true, data: result }, { status: 200 });
+  } catch (error: any) {
+    console.error('Error analyzing GitHub profile:', error);
+    return NextResponse.json(
+      { success: false, error: error.message || 'Internal Server Error' },
+      { status: 500 }
+    );
+  }
 }
