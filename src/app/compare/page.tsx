@@ -66,7 +66,7 @@ function CompareContent() {
 
   return (
     <div className="flex flex-col min-h-screen w-full bg-surface">
-      <main className="mt-6 p-6 max-w-2xl w-full mx-auto bg-background shadow-md rounded-lg mb-8" style={{ border: '1px solid var(--color-border)' }}>
+      <main className="mt-6 p-6 max-w-2xl w-full mx-auto bg-background shadow-md rounded-3xl mb-8" style={{ border: '1px solid var(--color-border)' }}>
         <h1 className="text-2xl font-bold text-text-primary text-center mb-2">
           GitHub Profile Comparison
         </h1>
@@ -170,11 +170,10 @@ function CompareContent() {
         )}
         <div className="mt-6 mb-2 text-center">
           <button
-            onClick={() => router.push('/')}
-            className="btn-primary"
-            suppressHydrationWarning
+            onClick={() => router.push(`/user/${user1}`)}
+            className="btn-white flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Return to home page
+            Back
           </button>
         </div>
       </main>

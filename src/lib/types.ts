@@ -31,3 +31,23 @@ export interface Note {
   content: string;
   created_at: string;
 }
+
+export interface AnalysisItem {
+  name: string;
+  count: number;
+}
+
+export interface JobAnalysisResult {
+  seniority: string;
+  roles: string[];
+  languages: AnalysisItem[];
+  tech: AnalysisItem[];
+  architecture: AnalysisItem[];
+  databases: AnalysisItem[];
+  ci_cd: AnalysisItem[];
+  testing: AnalysisItem[];
+}
+
+export interface ProfileAnalysisResult extends JobAnalysisResult {
+  profile: string;
+}

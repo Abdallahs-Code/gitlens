@@ -1,5 +1,12 @@
 import axios from "axios";
-import { GitHubProfile, GitHubRepo, GitHubProfileComparison, Note } from "@/lib/types";
+import { 
+  GitHubProfile,
+  GitHubRepo, 
+  GitHubProfileComparison, 
+  Note, 
+  JobAnalysisResult,
+  ProfileAnalysisResult
+} from "@/lib/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://gitlens-snowy.vercel.app";
 
@@ -54,4 +61,24 @@ export const summarizeProfile = async (
     repos,
   });
   return data.summary; 
+};
+
+export const analyzeJobDescription = async (
+  text: string
+): Promise<JobAnalysisResult> => {
+  const { data } = await axios.post(`${API_BASE}/api/analyze-job`, {
+    text,
+  });
+
+  return data.data ?? data;
+};
+
+export const analyzeGitHubProfile = async (
+  username: string
+): Promise<ProfileAnalysisResult> => {
+  const { data } = await axios.post(
+    `${API_BASE}/api/users/${username}/analyze`
+  );
+
+  return data.data ?? data;
 };

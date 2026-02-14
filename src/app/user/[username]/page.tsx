@@ -36,6 +36,7 @@ export default function UserProfilePage() {
   const [showRepoNotes, setShowRepoNotes] = useState<{ [repoName: string]: boolean }>({});
 
   const [compareLoading, setCompareLoading] = useState(false);
+  const [jobFitLoading, setJobFitLoading] = useState(false);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -155,6 +156,11 @@ export default function UserProfilePage() {
     router.push(`/compare?user1=${username}`);
   };
 
+  const handleJobFit = () => {
+    setJobFitLoading(true);
+    router.push(`/user/${username}/job-fit`);
+  };
+
   if (isLoading) return <Loader />;
   if (error) {
     return (
@@ -191,7 +197,7 @@ export default function UserProfilePage() {
 
   return (
     <div className="flex flex-col min-h-screen overflow-x-hidden bg-surface">
-      <main className="mt-4 p-4 sm:p-6 max-w-full sm:max-w-4xl mx-auto bg-background shadow-md rounded-lg mb-6"
+      <main className="mt-4 p-4 sm:p-6 max-w-full sm:max-w-4xl mx-auto bg-background shadow-md rounded-3xl mb-6 px-4 sm:px-6"
         style={{ border: '1px solid var(--color-border)' }}>
         <div className="flex flex-col sm:flex-row items-center sm:space-x-4 mb-6 space-y-4 sm:space-y-0">
           <img
@@ -213,6 +219,13 @@ export default function UserProfilePage() {
           </div>
           <div className="flex flex-wrap gap-2 justify-end px-4 sm:px-0">
             <button
+              onClick={handleSummarize}
+              disabled={summaryLoading}
+              className="btn-primary flex-1 sm:flex-none sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            >
+              {summaryLoading ? "Summarizing..." : "Summarize with AI"}
+            </button>
+            <button
               onClick={handleCompare}
               disabled={compareLoading}
               className="btn-primary flex-1 sm:flex-none sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
@@ -220,11 +233,11 @@ export default function UserProfilePage() {
               {compareLoading ? "Redirecting..." : "Compare"}
             </button>
             <button
-              onClick={handleSummarize}
-              disabled={summaryLoading}
+              onClick={handleJobFit}
+              disabled={jobFitLoading}
               className="btn-primary flex-1 sm:flex-none sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
             >
-              {summaryLoading ? "Summarizing..." : "Summarize with AI"}
+              {jobFitLoading ? "Redirecting..." : "Job Fit Analysis"}
             </button>
           </div>
         </div>

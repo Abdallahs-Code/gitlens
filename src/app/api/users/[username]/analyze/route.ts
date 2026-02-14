@@ -12,6 +12,28 @@ import { NextRequest, NextResponse } from 'next/server';
 
 function isRelevantFile(path: string): boolean {
   const lower = path.toLowerCase();
+  
+  const skipDirs = [
+    'node_modules/',
+    'vendor/',
+    'dist/',
+    'build/',
+    'target/',
+    '.git/',
+    '__pycache__/',
+    'venv/',
+    'env/',
+    '.next/',
+    '.nuxt/',
+    'coverage/',
+    '.vscode/',
+    '.idea/'
+  ];
+  
+  for (const dir of skipDirs) {
+    if (lower.includes(dir)) return false;
+  }
+  
   return (
     lower.endsWith('package.json') ||
     lower.endsWith('requirements.txt') ||
@@ -29,8 +51,14 @@ function isRelevantFile(path: string): boolean {
 async function analyzeRepo(repoFullName: string) {
   const [owner, repo] = repoFullName.split('/');
 
-  const repoResponse = await githubFetch(`https://api.github.com/repos/${owner}/${repo}`);
+  const [repoResponse, languagesResponse] = await Promise.all([
+    githubFetch(`https://api.github.com/repos/${owner}/${repo}`),
+    githubFetch(`https://api.github.com/repos/${owner}/${repo}/languages`)
+  ]);
+
   const repoJson = await repoResponse.json();
+  const languagesJson = await languagesResponse.json();
+  
   const defaultBranch = repoJson.default_branch;
   const description = repoJson.description || '';
 
@@ -38,7 +66,8 @@ async function analyzeRepo(repoFullName: string) {
     `https://api.github.com/repos/${owner}/${repo}/git/trees/${defaultBranch}?recursive=1`
   );
   const treeJson = await treeResponse.json();
-  const files = treeJson.tree as { path: string; type: string }[];
+  const files = (treeJson.tree as { path: string; type: string }[])
+    .filter(file => file.type === 'blob' && isRelevantFile(file.path));
 
   const repoLanguages = new Map<string, number>();
   const repoTech = new Set<string>();
@@ -46,11 +75,6 @@ async function analyzeRepo(repoFullName: string) {
   const repoDb = new Set<string>();
   const repoCiCd = new Set<string>();
   const repoTesting = new Set<string>();
-
-  const languagesResponse = await githubFetch(
-    `https://api.github.com/repos/${owner}/${repo}/languages`
-  );
-  const languagesJson = await languagesResponse.json();
 
   for (const [lang, bytes] of Object.entries(languagesJson)) {
     repoLanguages.set(lang, bytes as number);
@@ -64,20 +88,28 @@ async function analyzeRepo(repoFullName: string) {
     for (const test of extractTestingTools(description)) repoTesting.add(test);
   }
 
-  for (const file of files) {
-    if (file.type !== 'blob') continue;
-    if (!isRelevantFile(file.path)) continue;
+  const fileContentsPromises = files.map(async (file) => {
+    try {
+      const contentResponse = await githubFetch(
+        `https://api.github.com/repos/${owner}/${repo}/contents/${file.path}?ref=${defaultBranch}`
+      );
+      const contentJson = await contentResponse.json();
 
-    const contentResponse = await githubFetch(
-      `https://api.github.com/repos/${owner}/${repo}/contents/${file.path}?ref=${defaultBranch}`
-    );
-    const contentJson = await contentResponse.json();
-
-    let fileContent = '';
-    if (contentJson.encoding === 'base64' && contentJson.content) {
-      fileContent = Buffer.from(contentJson.content, 'base64').toString('utf-8');
+      if (contentJson.encoding === 'base64' && contentJson.content) {
+        return Buffer.from(contentJson.content, 'base64').toString('utf-8');
+      }
+      return '';
+    } catch (error) {
+      console.error(`Error fetching ${file.path}:`, error);
+      return '';
     }
+  });
 
+  const fileContents = await Promise.all(fileContentsPromises);
+
+  for (const fileContent of fileContents) {
+    if (!fileContent) continue;
+    
     for (const tech of extractTechnologies(fileContent)) repoTech.add(tech);
     for (const arch of extractArchitectures(fileContent)) repoArch.add(arch);
     for (const db of extractDatabases(fileContent)) repoDb.add(db);
@@ -96,19 +128,17 @@ async function analyzeRepo(repoFullName: string) {
 }
 
 export async function analyzeProfile(username: string) {
-  const userResponse = await githubFetch(
-    `https://api.github.com/users/${username}`
-  );
+  const [userResponse, reposResponse] = await Promise.all([
+    githubFetch(`https://api.github.com/users/${username}`),
+    githubFetch(`https://api.github.com/users/${username}/repos?per_page=100`)
+  ]);
+
   const userJson = await userResponse.json();
+  const repos = await reposResponse.json() as Array<{ full_name: string }>;
 
   const bio = userJson.bio || '';
   const company = userJson.company || '';
   const combinedProfileText = `${bio} ${company}`;
-
-  const reposResponse = await githubFetch(
-    `https://api.github.com/users/${username}/repos`
-  );
-  const repos = (await reposResponse.json()) as { full_name: string }[];
 
   const SENIORITY_PRIORITY = [
     'Principal',
@@ -122,7 +152,6 @@ export async function analyzeProfile(username: string) {
   const detectedSeniority = extractSeniority(combinedProfileText);
 
   let finalSeniority = 'Unknown';
-
   for (const level of SENIORITY_PRIORITY) {
     if (detectedSeniority.includes(level)) {
       finalSeniority = level;
@@ -138,33 +167,44 @@ export async function analyzeProfile(username: string) {
   const profileCiCd = new Map<string, number>();
   const profileTesting = new Map<string, number>();
 
-  for (const repo of repos) {
-    const { techs, architectures, databases, ci_cd, testing, languages } = await analyzeRepo(
-      repo.full_name
+  const CONCURRENCY = 5; 
+  const repoResults = [];
+  
+  for (let i = 0; i < repos.length; i += CONCURRENCY) {
+    const batch = repos.slice(i, i + CONCURRENCY);
+    const batchResults = await Promise.allSettled(
+      batch.map(repo => analyzeRepo(repo.full_name))
     );
-    
-    for (const [lang, bytes] of languages) {
-      profileLanguages.set(lang, (profileLanguages.get(lang) || 0) + bytes);
-    }
+    repoResults.push(...batchResults);
+  }
 
-    for (const tech of techs) {
-      profileTech.set(tech, (profileTech.get(tech) || 0) + 1);
-    }
+  for (const result of repoResults) {
+    if (result.status === 'fulfilled') {
+      const { techs, architectures, databases, ci_cd, testing, languages } = result.value;
+      
+      for (const [lang, bytes] of languages) {
+        profileLanguages.set(lang, (profileLanguages.get(lang) || 0) + bytes);
+      }
 
-    for (const arch of architectures) {
-      profileArch.set(arch, (profileArch.get(arch) || 0) + 1);
-    }
+      for (const tech of techs) {
+        profileTech.set(tech, (profileTech.get(tech) || 0) + 1);
+      }
 
-    for (const db of databases) {
-      profileDb.set(db, (profileDb.get(db) || 0) + 1);
-    }
+      for (const arch of architectures) {
+        profileArch.set(arch, (profileArch.get(arch) || 0) + 1);
+      }
 
-    for (const ci of ci_cd) {
-      profileCiCd.set(ci, (profileCiCd.get(ci) || 0) + 1);
-    }
+      for (const db of databases) {
+        profileDb.set(db, (profileDb.get(db) || 0) + 1);
+      }
 
-    for (const test of testing) {
-      profileTesting.set(test, (profileTesting.get(test) || 0) + 1);
+      for (const ci of ci_cd) {
+        profileCiCd.set(ci, (profileCiCd.get(ci) || 0) + 1);
+      }
+
+      for (const test of testing) {
+        profileTesting.set(test, (profileTesting.get(test) || 0) + 1);
+      }
     }
   }
 
@@ -184,22 +224,29 @@ export async function analyzeProfile(username: string) {
   };
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ username: string }> }
+) {
   try {
-    const body = await req.json();
+    const { username } = await params;
 
-    if (!body.username || typeof body.username !== 'string') {
+    if (!username || typeof username !== 'string') {
       return NextResponse.json(
-        { error: 'Missing or invalid "username" in request body' },
+        { error: 'Missing or invalid username in route' },
         { status: 400 }
       );
     }
 
-    const result = await analyzeProfile(body.username);
+    const result = await analyzeProfile(username);
 
-    return NextResponse.json({ success: true, data: result }, { status: 200 });
+    return NextResponse.json(
+      { success: true, data: result },
+      { status: 200 }
+    );
   } catch (error: any) {
     console.error('Error analyzing GitHub profile:', error);
+
     return NextResponse.json(
       { success: false, error: error.message || 'Internal Server Error' },
       { status: 500 }
