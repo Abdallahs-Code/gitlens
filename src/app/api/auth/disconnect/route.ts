@@ -1,0 +1,60 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { jwtVerify } from 'jose';
+import { supabaseAdmin } from '@/lib/supabase';
+import { decryptToken } from '@/lib/auth';
+
+export async function POST(request: NextRequest) {
+  try {
+    const token = request.cookies.get('session_token')?.value;
+
+    if (!token) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
+    let userId: number;
+
+    try {
+      const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+      const { payload } = await jwtVerify(token, secret);
+      userId = payload.userId as number;
+    } catch (error: any) {
+      if (error?.code === 'ERR_JWT_EXPIRED') {
+        const response = NextResponse.json({ message: 'Session expired, disconnected' });
+        return response;
+      }
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    const { data: user } = await supabaseAdmin
+      .from('users')
+      .select('github_token_encrypted')
+      .eq('id', userId)
+      .single();
+
+    if (user) {
+      const githubToken = decryptToken(user.github_token_encrypted);
+
+      await fetch(`https://api.github.com/applications/${process.env.GITHUB_CLIENT_ID}/token`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Basic ${Buffer.from(`${process.env.GITHUB_CLIENT_ID}:${process.env.GITHUB_CLIENT_SECRET}`).toString('base64')}`,
+          Accept: 'application/vnd.github+json',
+        },
+        body: JSON.stringify({ access_token: githubToken }),
+      });
+
+      await supabaseAdmin
+        .from('users')
+        .update({ github_token_encrypted: null })
+        .eq('id', userId);
+    }
+
+    const response = NextResponse.json({ message: 'Disconnected successfully' });
+    response.cookies.delete('session_token');
+    return response;
+
+  } catch (error) {
+    console.error('Disconnect error:', error);
+    return NextResponse.json({ error: 'Failed to disconnect' }, { status: 500 });
+  }
+}

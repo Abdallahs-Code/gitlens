@@ -1,0 +1,40 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { jwtVerify } from 'jose';
+import { supabaseAdmin } from '@/lib/supabase';
+
+export async function GET(request: NextRequest) {
+  const token = request.cookies.get('session_token')?.value;
+
+  if (!token) {
+    return NextResponse.json({ status: 'unauthenticated' }, { status: 401 });
+  }
+
+  try {
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+    const { payload } = await jwtVerify(token, secret);
+    const userId = payload.userId as number;
+
+    const { data: user, error } = await supabaseAdmin
+      .from('users')
+      .select('id, username, email, avatar_url')
+      .eq('id', userId)
+      .single();
+
+    if (error || !user) {
+      return NextResponse.json({ status: 'unauthenticated' }, { status: 401 });
+    }
+
+    return NextResponse.json({
+      status: 'authenticated',
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        avatar_url: user.avatar_url,
+      },
+    });
+
+  } catch (error: any) {
+    return NextResponse.json({ status: 'unauthenticated' }, { status: 401 });
+  }
+}

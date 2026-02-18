@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import type { GitHubProfile, GitHubRepo, Note } from "@/lib/types";
-import { fetchUserData, fetchNotes, addNote, summarizeProfile } from "@/lib/api";
+import { fetchUserData, fetchNotes, addNote, summarizeProfile } from "@/lib/api.shared";
 import axios from "axios";
 import { Frown } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -153,7 +153,7 @@ export default function UserProfilePage() {
 
   const handleCompare = () => {
     setCompareLoading(true);
-    router.push(`/compare?user1=${username}`);
+    router.push(`/user/${username}/compare`);
   };
 
   const handleJobFit = () => {
@@ -223,7 +223,7 @@ export default function UserProfilePage() {
               disabled={summaryLoading}
               className="btn-primary flex-1 sm:flex-none sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
             >
-              {summaryLoading ? "Summarizing..." : "Summarize with AI"}
+              {summaryLoading ? "Summarizing..." : "AI Summary"}
             </button>
             <button
               onClick={handleCompare}

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { githubFetch } from '@/lib/api';
+import { githubFetch } from '@/lib/api.server';
 import { GitHubProfile, GitHubRepo } from '@/lib/types';
 
 export async function GET(req: NextRequest, context: { params: Promise<{ username: string }> }) {

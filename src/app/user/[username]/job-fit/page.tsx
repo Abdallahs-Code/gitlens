@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { analyzeJobDescription, analyzeGitHubProfile } from "@/lib/api";
+import { analyzeJobDescription, analyzeGitHubProfile } from "@/lib/api.shared";
 import type { JobAnalysisResult, ProfileAnalysisResult } from "@/lib/types";
 
 export default function JobFitAnalysisPage() {

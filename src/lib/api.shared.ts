@@ -10,14 +10,18 @@ import {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://gitlens-snowy.vercel.app";
 
-export async function githubFetch(url: string) {
-  const headers = {
-    Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
-    Accept: "application/vnd.github+json",
-  };
+export const githubFlow = () => {
+  window.location.href = `${API_BASE}/api/auth/github`;
+};
 
-  return fetch(url, { headers });
-}
+export const disconnect = async (): Promise<void> => {
+  await axios.post(`${API_BASE}/api/auth/disconnect`);
+};
+
+export const getCurrentUser = async () => {
+  const { data } = await axios.get(`${API_BASE}/api/auth/me`);
+  return data;
+};
 
 export const fetchUserData = async (username: string): Promise<{ profile: GitHubProfile; repos: GitHubRepo[] }> => {
   const { data } = await axios.get(`${API_BASE}/api/users/${username}`);

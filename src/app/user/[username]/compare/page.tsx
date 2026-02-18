@@ -1,17 +1,15 @@
 'use client';
 
 import { useState, Suspense } from 'react';
-import { useRouter } from 'next/navigation';
-import { useSearchParams } from 'next/navigation';
-import { compareUsers } from '@/lib/api'; 
+import { useRouter, useParams } from 'next/navigation';
+import { compareUsers } from '@/lib/api.shared'; 
 import { Frown } from "lucide-react";
 import { GitHubProfileComparison } from '@/lib/types'; 
 
 function CompareContent() {
-  const searchParams = useSearchParams();
+  const params = useParams();
   const router = useRouter();
-
-  const user1 = searchParams.get('user1') || '';
+  const user1 = params.username as string;
   
   const [user2Input, setUser2Input] = useState('');
   const [user1Data, setUser1Data] = useState<GitHubProfileComparison | null>(null);

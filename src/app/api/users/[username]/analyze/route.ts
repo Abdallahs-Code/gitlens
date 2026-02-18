@@ -7,7 +7,7 @@ import {
   extractSeniority,
   extractRoles
 } from '@/lib/extractors';
-import { githubFetch } from '@/lib/api';
+import { githubFetch } from '@/lib/api.server';
 import { NextRequest, NextResponse } from 'next/server';
 
 function isRelevantFile(path: string): boolean {
@@ -66,7 +66,7 @@ async function analyzeRepo(repoFullName: string) {
     `https://api.github.com/repos/${owner}/${repo}/git/trees/${defaultBranch}?recursive=1`
   );
   const treeJson = await treeResponse.json();
-  const files = (treeJson.tree as { path: string; type: string }[])
+  const files = (treeJson.tree as { path: string; type: string; sha: string }[])
     .filter(file => file.type === 'blob' && isRelevantFile(file.path));
 
   const repoLanguages = new Map<string, number>();
@@ -91,7 +91,7 @@ async function analyzeRepo(repoFullName: string) {
   const fileContentsPromises = files.map(async (file) => {
     try {
       const contentResponse = await githubFetch(
-        `https://api.github.com/repos/${owner}/${repo}/contents/${file.path}?ref=${defaultBranch}`
+        `https://api.github.com/repos/${owner}/${repo}/git/blobs/${file.sha}`
       );
       const contentJson = await contentResponse.json();
 
@@ -127,14 +127,41 @@ async function analyzeRepo(repoFullName: string) {
   };
 }
 
+async function fetchAllRepos(username: string) {
+  const perPage = 100;
+  let page = 1;
+  let allRepos: Array<{ full_name: string }> = [];
+
+  while (true) {
+    const response = await githubFetch(
+      `https://api.github.com/users/${username}/repos?per_page=${perPage}&page=${page}`
+    );
+
+    const repos = await response.json();
+
+    if (!Array.isArray(repos) || repos.length === 0) {
+      break;
+    }
+
+    allRepos.push(...repos);
+
+    if (repos.length < perPage) {
+      break;
+    }
+
+    page++;
+  }
+
+  return allRepos;
+}
+
 export async function analyzeProfile(username: string) {
-  const [userResponse, reposResponse] = await Promise.all([
-    githubFetch(`https://api.github.com/users/${username}`),
-    githubFetch(`https://api.github.com/users/${username}/repos?per_page=100`)
-  ]);
+  const userResponse = await githubFetch(
+    `https://api.github.com/users/${username}`
+  );
 
   const userJson = await userResponse.json();
-  const repos = await reposResponse.json() as Array<{ full_name: string }>;
+  const repos = await fetchAllRepos(username);
 
   const bio = userJson.bio || '';
   const company = userJson.company || '';

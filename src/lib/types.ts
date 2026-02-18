@@ -1,3 +1,10 @@
+export interface User {
+  id: number
+  username: string;
+  email: string | null;
+  avatar_url: string;
+}
+
 export interface GitHubProfile {
   login: string;
   avatar_url: string;
