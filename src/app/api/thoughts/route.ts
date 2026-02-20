@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
   const repoName = searchParams.get('repo');
 
   let query = supabaseAdmin
-    .from('notes')
+    .from('thoughts')
     .select(`
       content,
       created_at,
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
   const { data, error } = await query;
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ notes: data });
+  return NextResponse.json({ thoughts: data });
 }
 
 export async function POST(req: NextRequest) {
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     const { username, repo_name, content } = body;
 
     const { data, error } = await supabaseAdmin
-      .from("notes")
+      .from("thoughts")
       .insert([{ 
         username, 
         repo_name, 
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ note: data[0] }, { status: 201 });
+    return NextResponse.json({ thought: data[0] }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }

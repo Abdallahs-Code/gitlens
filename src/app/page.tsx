@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { Unplug, MessageSquare, Search, Github, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { User, Note } from "@/lib/types";
-import { getCurrentUser, githubFlow, disconnect, fetchNotes, formatDate } from "@/lib/api.shared";
+import { User, Thought } from "@/lib/types";
+import { getCurrentUser, githubFlow, disconnect, fetchThoughts, formatDate } from "@/lib/api.shared";
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 
@@ -14,9 +14,9 @@ export default function HomePage() {
   const [disconnectLoading, setDisconnectLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [authStatus, setAuthStatus] = useState<AuthStatus>('loading');
-  const [userNotes, setUserNotes] = useState<Note[]>([]);
-  const [notesPage, setNotesPage] = useState(0);
-  const [notesLoading, setNotesLoading] = useState(false);
+  const [userThoughts, setUserThoughts] = useState<Thought[]>([]);
+  const [thoughtsPage, setThoughtsPage] = useState(0);
+  const [thoughtsLoading, setThoughtsLoading] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -25,7 +25,7 @@ export default function HomePage() {
 
   useEffect(() => {
     if (user) {
-      loadUserNotes();
+      loadUserThoughts();
     }
   }, [user]);
 
@@ -39,17 +39,17 @@ export default function HomePage() {
     }
   };
 
-  const loadUserNotes = async () => {
+  const loadUserThoughts = async () => {
     if (!user) return;
-    setNotesLoading(true);
-    setNotesPage(0); 
+    setThoughtsLoading(true);
+    setThoughtsPage(0); 
     try {
-      const notes = await fetchNotes(user.username);
-      setUserNotes(notes);
+      const thoughts = await fetchThoughts(user.username);
+      setUserThoughts(thoughts);
     } catch (error) {
-      console.error('Failed to load notes:', error);
+      console.error('Failed to load thoughts:', error);
     } finally {
-      setNotesLoading(false);
+      setThoughtsLoading(false);
     }
   };
 
@@ -184,49 +184,49 @@ export default function HomePage() {
                   <MessageSquare className="w-5 h-5 text-accent" />
                   <h2 className="text-xl font-semibold text-text-primary">Community Thoughts About You</h2>
                 </div>
-                <span className="text-sm text-text-muted">{userNotes.length} {userNotes.length === 1 ? 'note' : 'notes'}</span>
+                <span className="text-sm text-text-muted">{userThoughts.length} {userThoughts.length === 1 ? 'thought' : 'thoughts'}</span>
               </div>
 
-              {notesLoading ? (
-                <p className="text-text-secondary text-center py-8">Loading notes...</p>
-              ) : userNotes.length === 0 ? (
+              {thoughtsLoading ? (
+                <p className="text-text-secondary text-center py-8">Loading thoughts...</p>
+              ) : userThoughts.length === 0 ? (
                 <div className="text-center py-12">
                   <MessageSquare className="w-12 h-12 text-text-muted mx-auto mb-3" />
-                  <p className="text-text-secondary">No notes yet</p>
+                  <p className="text-text-secondary">No thoughts yet</p>
                   <p className="text-text-muted text-sm mt-2">When others leave thoughts on your profile, they'll appear here!</p>
                 </div>
               ) : (() => {
-                const page = notesPage;
+                const page = thoughtsPage;
                 const perPage = 3;
-                const totalPages = Math.ceil(userNotes.length / perPage);
-                const sorted = [...userNotes].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+                const totalPages = Math.ceil(userThoughts.length / perPage);
+                const sorted = [...userThoughts].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
                 const visible = sorted.slice(page * perPage, page * perPage + perPage);
 
                 return (
                   <div className="flex flex-col gap-4">
                     <div className="bg-surface rounded-xl p-4 flex flex-col gap-4" style={{ border: '1px solid var(--color-border)' }}>
-                      {visible.map((note, index) => (
+                      {visible.map((thought, index) => (
                         <div key={index} className={index !== visible.length - 1 ? "pb-4 border-b border-border" : ""}>
                           <div className="flex items-start gap-3">
                             <img
-                              src={note.users.avatar_url}
-                              alt={note.users.username}
+                              src={thought.users.avatar_url}
+                              alt={thought.users.username}
                               className="w-9 h-9 rounded-full mt-1 shrink-0"
                             />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-2 mb-1">
                                 <div className="flex items-center gap-2">
-                                  <span className="font-medium text-text-primary">{note.users.username}</span>
-                                  {note.repo_name && (
+                                  <span className="font-medium text-text-primary">{thought.users.username}</span>
+                                  {thought.repo_name && (
                                     <span className="flex items-center gap-1 text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full">
                                       <Github className="w-3 h-3" />
-                                      {note.repo_name}
+                                      {thought.repo_name}
                                     </span>
                                   )}
                                 </div>
-                                <span className="text-xs text-text-muted shrink-0">{formatDate(note.created_at)}</span>
+                                <span className="text-xs text-text-muted shrink-0">{formatDate(thought.created_at)}</span>
                               </div>
-                              <p className="text-text-secondary text-sm">{note.content}</p>
+                              <p className="text-text-secondary text-sm">{thought.content}</p>
                             </div>
                           </div>
                         </div>
@@ -236,7 +236,7 @@ export default function HomePage() {
                     {totalPages > 1 && (
                       <div className="flex items-center justify-between">
                         <button
-                          onClick={() => setNotesPage(p => Math.max(0, p - 1))}
+                          onClick={() => setThoughtsPage(p => Math.max(0, p - 1))}
                           disabled={page === 0}
                           className="text-sm text-text-muted disabled:opacity-30 hover:text-accent transition-colors cursor-pointer"                        
                         >
@@ -244,7 +244,7 @@ export default function HomePage() {
                         </button>
                         <span className="text-xs text-text-muted">{page + 1} / {totalPages}</span>
                         <button
-                          onClick={() => setNotesPage(p => Math.min(totalPages - 1, p + 1))}
+                          onClick={() => setThoughtsPage(p => Math.min(totalPages - 1, p + 1))}
                           disabled={page === totalPages - 1}
                           className="text-sm text-text-muted disabled:opacity-30 hover:text-accent transition-colors cursor-pointer"                  
                         >

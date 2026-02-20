@@ -3,7 +3,7 @@ import {
   GitHubProfile,
   GitHubRepo, 
   GitHubProfileComparison, 
-  Note, 
+  Thought, 
   JobAnalysisResult,
   ProfileAnalysisResult
 } from "@/lib/types";
@@ -31,19 +31,19 @@ export const fetchUserData = async (username: string): Promise<{ profile: GitHub
   };
 };
 
-export const fetchNotes = async (
+export const fetchThoughts = async (
   username: string
-): Promise<Note[]> => {
-  const url = `${API_BASE}/api/notes?username=${username}`;
+): Promise<Thought[]> => {
+  const url = `${API_BASE}/api/thoughts?username=${username}`;
   const { data } = await axios.get(url);
-  return Array.isArray(data) ? data : data.notes;
+  return Array.isArray(data) ? data : data.thoughts;
 };
 
-export const addNote = async (
-  note: { username: string; repo_name: string | null; content: string }
-): Promise<Note> => {
-  const { data } = await axios.post(`${API_BASE}/api/notes`, note);
-  return data.note; 
+export const addThought = async (
+  thought: { username: string; repo_name: string | null; content: string }
+): Promise<Thought> => {
+  const { data } = await axios.post(`${API_BASE}/api/thoughts`, thought);
+  return data.thought; 
 };
 
 export const formatDate = (timestamp: string): string => {

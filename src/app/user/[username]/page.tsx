@@ -1,8 +1,8 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import type { GitHubProfile, GitHubRepo, Note } from "@/lib/types";
-import { fetchUserData, fetchNotes, addNote, formatDate, summarizeProfile } from "@/lib/api.shared";
+import type { GitHubProfile, GitHubRepo, Thought } from "@/lib/types";
+import { fetchUserData, fetchThoughts, addThought, formatDate, summarizeProfile } from "@/lib/api.shared";
 import axios from "axios";
 import { Frown } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -18,22 +18,22 @@ export default function UserProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [notesLoading, setNotesLoading] = useState(true);
-  const [notesError, setNotesError] = useState<string | null>(null);
+  const [thoughts, setThoughts] = useState<Thought[]>([]);
+  const [thoughtsLoading, setThoughtsLoading] = useState(true);
+  const [thoughtsError, setThoughtsError] = useState<string | null>(null);
 
-  const [userNoteContent, setUserNoteContent] = useState("");
-  const [repoNoteContents, setRepoNoteContents] = useState<{ [repoName: string]: string }>({});
+  const [userThoughtContent, setUserThoughtContent] = useState("");
+  const [repoThoughtContents, setRepoThoughtContents] = useState<{ [repoName: string]: string }>({});
 
-  const [userNoteLoading, setUserNoteLoading] = useState(false);
-  const [repoNoteLoading, setRepoNoteLoading] = useState<{ [repoName: string]: boolean }>({});
+  const [userThoughtLoading, setUserThoughtLoading] = useState(false);
+  const [repoThoughtLoading, setRepoThoughtLoading] = useState<{ [repoName: string]: boolean }>({});
 
   const [aiSummary, setAiSummary] = useState<string>("");
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
 
-  const [showNotes, setShowNotes] = useState(false);
-  const [showRepoNotes, setShowRepoNotes] = useState<{ [repoName: string]: boolean }>({});
+  const [showThoughts, setShowThoughts] = useState(false);
+  const [showRepoThoughts, setShowRepoThoughts] = useState<{ [repoName: string]: boolean }>({});
 
   const [compareLoading, setCompareLoading] = useState(false);
   const [jobFitLoading, setJobFitLoading] = useState(false);
@@ -66,53 +66,53 @@ export default function UserProfilePage() {
   }, [urlUsername]);
 
   useEffect(() => {
-    const loadNotes = async () => {
+    const loadThoughts = async () => {
       if (!username) return;
 
-      setNotesLoading(true);
-      setNotesError(null);
+      setThoughtsLoading(true);
+      setThoughtsError(null);
       try {
-        const data = await fetchNotes(username);
-        setNotes(data);
+        const data = await fetchThoughts(username);
+        setThoughts(data);
       } catch (err) {
-        setNotesError("Error loading community thoughts");
+        setThoughtsError("Error loading community thoughts");
         console.error(err);
       } finally {
-        setNotesLoading(false);
+        setThoughtsLoading(false);
       }
     };
 
-    loadNotes();
+    loadThoughts();
   }, [username]);
 
-  const handleAddNote = async (repoName: string | null = null) => {
-    const content = repoName ? repoNoteContents[repoName] : userNoteContent;
+  const handleAddThought = async (repoName: string | null = null) => {
+    const content = repoName ? repoThoughtContents[repoName] : userThoughtContent;
     if (!content?.trim()) return;
 
     if (repoName) {
-      setRepoNoteLoading((prev) => ({ ...prev, [repoName]: true }));
+      setRepoThoughtLoading((prev) => ({ ...prev, [repoName]: true }));
     } else {
-      setUserNoteLoading(true);
+      setUserThoughtLoading(true);
     }
 
     try {
-      await addNote({ username, repo_name: repoName, content });
+      await addThought({ username, repo_name: repoName, content });
 
-      const updatedNotes = await fetchNotes(username);
-      setNotes(updatedNotes);
+      const updatedThoughts = await fetchThoughts(username);
+      setThoughts(updatedThoughts);
 
       if (repoName) {
-        setRepoNoteContents((prev) => ({ ...prev, [repoName]: "" }));
+        setRepoThoughtContents((prev) => ({ ...prev, [repoName]: "" }));
       } else {
-        setUserNoteContent("");
+        setUserThoughtContent("");
       }
     } catch (err) {
       console.error("Error adding your thought:", err);
     } finally {
       if (repoName) {
-        setRepoNoteLoading((prev) => ({ ...prev, [repoName]: false }));
+        setRepoThoughtLoading((prev) => ({ ...prev, [repoName]: false }));
       } else {
-        setUserNoteLoading(false);
+        setUserThoughtLoading(false);
       }
     }
   };
@@ -253,22 +253,22 @@ export default function UserProfilePage() {
 
         <section className="mt-8">
           <button
-            onClick={() => setShowNotes((prev) => !prev)}
+            onClick={() => setShowThoughts((prev) => !prev)}
             className="btn-secondary w-full sm:w-auto text-sm text-center mb-3 flex items-center justify-center gap-2"
           >
-            <span>{showNotes ? "Hide" : "GitLens community thoughts"}</span>
+            <span>{showThoughts ? "Hide" : "GitLens community thoughts"}</span>
             <span className="bg-accent text-black text-xs px-2 py-0.5 rounded-full">
-              {notes.filter((note) => note.repo_name === null).length}
+              {thoughts.filter((thought) => thought.repo_name === null).length}
             </span>
           </button>
 
-          {showNotes && (
+          {showThoughts && (
             <>
-              {notesLoading && <p className="text-text-secondary">Loading thoughts...</p>}
-              {notesError && <p className="text-error">{notesError}</p>}
-              {notes
-                .filter((note) => note.repo_name === null)
-                .map((note, index) => (
+              {thoughtsLoading && <p className="text-text-secondary">Loading thoughts...</p>}
+              {thoughtsError && <p className="text-error">{thoughtsError}</p>}
+              {thoughts
+                .filter((thought) => thought.repo_name === null)
+                .map((thought, index) => (
                   <li
                     key={index}
                     className="bg-surface py-2 px-6 rounded text-sm text-text-primary"
@@ -276,18 +276,18 @@ export default function UserProfilePage() {
                   >
                     <div className="flex items-start gap-3">
                       <img 
-                        src={note.users.avatar_url} 
-                        alt={note.users.username}
+                        src={thought.users.avatar_url} 
+                        alt={thought.users.username}
                         className="w-8 h-8 rounded-full mt-1"
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-text-primary">{note.users.username}</span>
+                          <span className="font-medium text-text-primary">{thought.users.username}</span>
                           <span className="text-xs text-text-muted">
-                            {formatDate(note.created_at)}
+                            {formatDate(thought.created_at)}
                           </span>
                         </div>
-                        <p className="text-text-secondary">&quot;{note.content}&quot;</p>
+                        <p className="text-text-secondary">&quot;{thought.content}&quot;</p>
                       </div>
                     </div>
                   </li>
@@ -295,23 +295,23 @@ export default function UserProfilePage() {
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
-                  handleAddNote(null);
+                  handleAddThought(null);
                 }}
                 className="mt-3 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2"
               >
                 <input
                   type="text"
-                  value={userNoteContent}
-                  onChange={(e) => setUserNoteContent(e.target.value)}
+                  value={userThoughtContent}
+                  onChange={(e) => setUserThoughtContent(e.target.value)}
                   placeholder="Add something..."
                   className="input-field w-full sm:w-auto"
                 />
                 <button
                   type="submit"
-                  disabled={userNoteLoading}
+                  disabled={userThoughtLoading}
                   className="btn-primary w-full sm:w-auto disabled:opacity-50"
                 >
-                  {userNoteLoading ? "Adding..." : "Add"}
+                  {userThoughtLoading ? "Adding..." : "Add"}
                 </button>
               </form>
             </>
@@ -345,24 +345,24 @@ export default function UserProfilePage() {
 
                 <button
                   onClick={() =>
-                    setShowRepoNotes((prev) => ({ ...prev, [repo.name]: !prev[repo.name] }))
+                    setShowRepoThoughts((prev) => ({ ...prev, [repo.name]: !prev[repo.name] }))
                   }
                   className="btn-secondary w-full sm:w-auto text-sm text-center flex items-center justify-center gap-2"
                 >
                   <span>
-                    {showRepoNotes[repo.name] ? "Hide" : "GitLens community thoughts"}
+                    {showRepoThoughts[repo.name] ? "Hide" : "GitLens community thoughts"}
                   </span>
                   <span className="bg-accent text-black text-xs px-2 py-0.5 rounded-full">
-                    {notes.filter((note) => note.repo_name === repo.name).length}
+                    {thoughts.filter((thought) => thought.repo_name === repo.name).length}
                   </span>
                 </button>
               </div>
-              {showRepoNotes[repo.name] && (
+              {showRepoThoughts[repo.name] && (
                 <div className="mt-3">
                   <ul className="space-y-2">
-                    {notes
-                      ?.filter((note) => note.repo_name === repo.name)
-                      .map((note, index) => (
+                    {thoughts
+                      ?.filter((thought) => thought.repo_name === repo.name)
+                      .map((thought, index) => (
                         <li
                           key={index}
                           className="bg-surface py-2 px-6 rounded text-sm text-text-primary"
@@ -370,18 +370,18 @@ export default function UserProfilePage() {
                         >
                           <div className="flex items-start gap-3">
                             <img 
-                              src={note.users.avatar_url} 
-                              alt={note.users.username}
+                              src={thought.users.avatar_url} 
+                              alt={thought.users.username}
                               className="w-8 h-8 rounded-full mt-1"
                             />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
-                                <span className="font-medium text-text-primary">{note.users.username}</span>
+                                <span className="font-medium text-text-primary">{thought.users.username}</span>
                                 <span className="text-xs text-text-muted">
-                                  {formatDate(note.created_at)}
+                                  {formatDate(thought.created_at)}
                                 </span>
                               </div>
-                              <p className="text-text-secondary">&quot;{note.content}&quot;</p>
+                              <p className="text-text-secondary">&quot;{thought.content}&quot;</p>
                             </div>
                           </div>
                         </li>
@@ -390,25 +390,25 @@ export default function UserProfilePage() {
                   <form
                     onSubmit={(e) => {
                       e.preventDefault();
-                      handleAddNote(repo.name);
+                      handleAddThought(repo.name);
                     }}
                     className="mt-3 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2"
                   >
                     <input
                       type="text"
-                      value={repoNoteContents[repo.name] || ""}
+                      value={repoThoughtContents[repo.name] || ""}
                       onChange={(e) =>
-                        setRepoNoteContents((prev) => ({ ...prev, [repo.name]: e.target.value }))
+                        setRepoThoughtContents((prev) => ({ ...prev, [repo.name]: e.target.value }))
                       }
                       placeholder="Add something..."
                       className="input-field w-full sm:w-auto"
                     />
                     <button
                       type="submit"
-                      disabled={repoNoteLoading[repo.name]}
+                      disabled={repoThoughtLoading[repo.name]}
                       className="btn-primary w-full sm:w-auto text-sm disabled:opacity-50"
                     >
-                      {repoNoteLoading[repo.name] ? "Adding..." : "Add"}
+                      {repoThoughtLoading[repo.name] ? "Adding..." : "Add"}
                     </button>
                   </form>
                 </div>

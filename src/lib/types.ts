@@ -6,7 +6,7 @@ export interface User {
   bio: string | null;
 }
 
-export interface Note {
+export interface Thought {
   content: string;
   created_at: string;
   repo_name: string | null;

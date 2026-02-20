@@ -31,7 +31,7 @@ export const config = {
   matcher: [
     '/user/:path*',
     '/api/users/:path*',
-    '/api/notes/:path*',
+    '/api/thoughts/:path*',
     '/api/compare/:path*',
     '/api/summarize/:path*',
     '/api/analyze-job/:path*',
