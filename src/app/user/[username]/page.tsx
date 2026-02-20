@@ -1,11 +1,11 @@
 "use client";
 
+import axios from "axios";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { GitHubProfile, GitHubRepo, Thought } from "@/lib/types";
+import { Frown, MessageSquare, Sparkles, GitCompare, Briefcase } from "lucide-react";
 import { fetchUserData, fetchThoughts, addThought, formatDate, summarizeProfile } from "@/lib/api.shared";
-import axios from "axios";
-import { Frown } from "lucide-react";
-import { useState, useEffect } from "react";
 
 export default function UserProfilePage() {
   const { username: urlUsername } = useParams<{ username: string }>();
@@ -38,6 +38,9 @@ export default function UserProfilePage() {
   const [compareLoading, setCompareLoading] = useState(false);
   const [jobFitLoading, setJobFitLoading] = useState(false);
 
+  const [thoughtsPage, setThoughtsPage] = useState(0);
+  const [repoThoughtsPage, setRepoThoughtsPage] = useState<{ [repoName: string]: number }>({});
+
   useEffect(() => {
     const loadUserData = async () => {
       if (!urlUsername) return;
@@ -53,7 +56,7 @@ export default function UserProfilePage() {
         if (axios.isAxiosError(err)) {
           const message: string =
             err.response?.data?.error ?? "Something went wrong";
-          setError(message); 
+          setError(message);
         } else {
           setError("Unexpected error");
         }
@@ -103,8 +106,10 @@ export default function UserProfilePage() {
 
       if (repoName) {
         setRepoThoughtContents((prev) => ({ ...prev, [repoName]: "" }));
+        setRepoThoughtsPage((prev) => ({ ...prev, [repoName]: 0 }));
       } else {
         setUserThoughtContent("");
+        setThoughtsPage(0);
       }
     } catch (err) {
       console.error("Error adding your thought:", err);
@@ -139,7 +144,7 @@ export default function UserProfilePage() {
         <div className="relative">
           <div className="w-16 h-16 rounded-full animate-spin" style={{
             border: '4px solid #e5e7eb',
-            borderTopColor: '#2563eb'
+            borderTopColor: '#0fffff'
           }}></div>
           <p className="mt-4 text-base text-white text-center font-medium">Loading...</p>
         </div>
@@ -157,7 +162,104 @@ export default function UserProfilePage() {
     router.push(`/user/${username}/job-fit`);
   };
 
-  if (isLoading) return <Loader />;
+  const renderPaginatedThoughts = (
+    filtered: Thought[],
+    page: number,
+    setPage: (fn: (p: number) => number) => void
+  ) => {
+    const perPage = 3;
+    const sorted = [...filtered].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+    const totalPages = Math.ceil(sorted.length / perPage);
+    const visible = sorted.slice(page * perPage, page * perPage + perPage);
+
+    return (
+      <div className="flex flex-col gap-3">
+        <div className="bg-surface rounded-xl flex flex-col gap-0 overflow-hidden px-4" style={{ border: '1px solid var(--color-border)' }}>
+          {visible.map((thought, index) => (
+            <div
+              key={index}
+              className={`py-3 ${index !== visible.length - 1 ? "border-b border-border" : ""}`}
+            >
+              <div className="flex items-start gap-3">
+                <img
+                  src={thought.users.avatar_url}
+                  alt={thought.users.username}
+                  className="w-8 h-8 rounded-full mt-1 shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-medium text-text-primary text-sm">{thought.users.username}</span>
+                    <span className="text-xs text-text-muted shrink-0">{formatDate(thought.created_at)}</span>
+                  </div>
+                  <p className="text-text-secondary text-sm">{thought.content}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-1">
+            <button
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={page === 0}
+              className="text-sm text-text-muted disabled:opacity-30 hover:text-accent transition-colors cursor-pointer"
+            >
+              ← Newer
+            </button>
+            <span className="text-xs text-text-muted">{page + 1} / {totalPages}</span>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+              disabled={page === totalPages - 1}
+              className="text-sm text-text-muted disabled:opacity-30 hover:text-accent transition-colors cursor-pointer"
+            >
+              Older →
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative w-16 h-16">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div
+                key={i}
+                className="absolute inset-0 flex justify-center"
+                style={{ transform: `rotate(${i * (360 / 12)}deg)` }}
+              >
+                <div
+                  style={{
+                    width: '4px',
+                    height: '24px',
+                    borderRadius: '2px',
+                    marginTop: '0px',
+                    backgroundColor: '#0fffff',
+                    opacity: (i + 1) / 12,
+                    animation: `radialFade 0.8s linear infinite`,
+                    animationDelay: `${(i / 12) - 0.8}s`,
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+        <style>{`
+          @keyframes radialFade {
+            0%   { opacity: 0.08; }
+            100% { opacity: 1; }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen text-center px-4">
@@ -174,6 +276,7 @@ export default function UserProfilePage() {
       </div>
     );
   }
+
   if (!profile) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen text-center px-4">
@@ -202,7 +305,7 @@ export default function UserProfilePage() {
             className="w-20 h-20 rounded-full"
             style={{ border: '2px solid var(--color-border)' }}
           />
-          <div className="flex-1 text-center sm:text-left">
+          <div className="text-center sm:text-left">
             <h1 className="text-2xl font-bold text-text-primary">{profile.name || profile.login}</h1>
             <p className="text-text-secondary">
               {profile.bio}
@@ -213,27 +316,30 @@ export default function UserProfilePage() {
               <span>Repos: {profile.public_repos}</span>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2 justify-end px-4 sm:px-0">
+          <div className="flex flex-wrap gap-4 justify-end px-4 sm:px-0 sm:ml-12">
             <button
               onClick={handleSummarize}
               disabled={summaryLoading}
-              className="btn-primary flex-1 sm:flex-none sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              className="btn-primary flex-1 sm:flex-none sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-2"
             >
-              {summaryLoading ? "Summarizing..." : "AI Summary"}
+              <Sparkles className="w-4 h-4" />
+              {summaryLoading ? "Summarizing..." : "Summarize"}
             </button>
             <button
               onClick={handleCompare}
               disabled={compareLoading}
-              className="btn-primary flex-1 sm:flex-none sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              className="btn-primary flex-1 sm:flex-none sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-2"
             >
+              <GitCompare className="w-4 h-4" />
               {compareLoading ? "Redirecting..." : "Compare"}
             </button>
             <button
               onClick={handleJobFit}
               disabled={jobFitLoading}
-              className="btn-primary flex-1 sm:flex-none sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              className="btn-primary flex-1 sm:flex-none sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-2"
             >
-              {jobFitLoading ? "Redirecting..." : "Job Fit Analysis"}
+              <Briefcase className="w-4 h-4" />
+              {jobFitLoading ? "Redirecting..." : "Match"}
             </button>
           </div>
         </div>
@@ -254,67 +360,54 @@ export default function UserProfilePage() {
         <section className="mt-8">
           <button
             onClick={() => setShowThoughts((prev) => !prev)}
-            className="btn-secondary w-full sm:w-auto text-sm text-center mb-3 flex items-center justify-center gap-2"
+            className="btn-white w-full sm:w-auto text-sm text-center mb-3 flex items-center justify-center gap-2"
           >
-            <span>{showThoughts ? "Hide" : "GitLens community thoughts"}</span>
+            <span className="flex items-center gap-1.5">
+              <MessageSquare className="w-3.5 h-3.5 text-black fill-current" />
+              {showThoughts ? "Hide" : "Thoughts"}
+            </span>
             <span className="bg-accent text-black text-xs px-2 py-0.5 rounded-full">
               {thoughts.filter((thought) => thought.repo_name === null).length}
             </span>
           </button>
 
           {showThoughts && (
-            <>
+            <div className="flex flex-col gap-3">
               {thoughtsLoading && <p className="text-text-secondary">Loading thoughts...</p>}
               {thoughtsError && <p className="text-error">{thoughtsError}</p>}
-              {thoughts
-                .filter((thought) => thought.repo_name === null)
-                .map((thought, index) => (
-                  <li
-                    key={index}
-                    className="bg-surface py-2 px-6 rounded text-sm text-text-primary"
-                    style={{ border: '1px solid var(--color-border)' }}
-                  >
-                    <div className="flex items-start gap-3">
-                      <img 
-                        src={thought.users.avatar_url} 
-                        alt={thought.users.username}
-                        className="w-8 h-8 rounded-full mt-1"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-text-primary">{thought.users.username}</span>
-                          <span className="text-xs text-text-muted">
-                            {formatDate(thought.created_at)}
-                          </span>
-                        </div>
-                        <p className="text-text-secondary">&quot;{thought.content}&quot;</p>
-                      </div>
-                    </div>
-                  </li>
-                ))}
+
+              {!thoughtsLoading && !thoughtsError && (() => {
+                const filtered = thoughts.filter((t) => t.repo_name === null);
+                return filtered.length > 0
+                  ? renderPaginatedThoughts(filtered, thoughtsPage, setThoughtsPage)
+                  : <div className="bg-surface rounded-xl py-6 flex items-center justify-center" style={{ border: '1px solid var(--color-border)' }}>
+                      <p className="text-text-muted text-sm">No thoughts yet.</p>
+                    </div>;
+              })()}
+
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
                   handleAddThought(null);
                 }}
-                className="mt-3 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2"
+                className="mt-1 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2"
               >
                 <input
                   type="text"
                   value={userThoughtContent}
                   onChange={(e) => setUserThoughtContent(e.target.value)}
                   placeholder="Add something..."
-                  className="input-field w-full sm:w-auto"
+                  className="input-field w-full sm:w-auto !py-1.5 !text-sm"
                 />
                 <button
                   type="submit"
                   disabled={userThoughtLoading}
-                  className="btn-primary w-full sm:w-auto disabled:opacity-50"
+                  className="btn-primary w-full sm:w-auto disabled:opacity-50 !py-1.5 !text-sm"
                 >
-                  {userThoughtLoading ? "Adding..." : "Add"}
+                  {userThoughtLoading ? "Sharing..." : "Share"}
                 </button>
               </form>
-            </>
+            </div>
           )}
         </section>
 
@@ -347,52 +440,38 @@ export default function UserProfilePage() {
                   onClick={() =>
                     setShowRepoThoughts((prev) => ({ ...prev, [repo.name]: !prev[repo.name] }))
                   }
-                  className="btn-secondary w-full sm:w-auto text-sm text-center flex items-center justify-center gap-2"
+                  className="btn-white w-full sm:w-auto text-sm text-center flex items-center justify-center gap-2"
                 >
-                  <span>
-                    {showRepoThoughts[repo.name] ? "Hide" : "GitLens community thoughts"}
+                  <span className="flex items-center gap-1.5">
+                    <MessageSquare className="w-3.5 h-3.5 text-black fill-current" />
+                    {showRepoThoughts[repo.name] ? "Hide" : "Thoughts"}
                   </span>
                   <span className="bg-accent text-black text-xs px-2 py-0.5 rounded-full">
                     {thoughts.filter((thought) => thought.repo_name === repo.name).length}
                   </span>
                 </button>
               </div>
+
               {showRepoThoughts[repo.name] && (
-                <div className="mt-3">
-                  <ul className="space-y-2">
-                    {thoughts
-                      ?.filter((thought) => thought.repo_name === repo.name)
-                      .map((thought, index) => (
-                        <li
-                          key={index}
-                          className="bg-surface py-2 px-6 rounded text-sm text-text-primary"
-                          style={{ border: '1px solid var(--color-border)' }}
-                        >
-                          <div className="flex items-start gap-3">
-                            <img 
-                              src={thought.users.avatar_url} 
-                              alt={thought.users.username}
-                              className="w-8 h-8 rounded-full mt-1"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-medium text-text-primary">{thought.users.username}</span>
-                                <span className="text-xs text-text-muted">
-                                  {formatDate(thought.created_at)}
-                                </span>
-                              </div>
-                              <p className="text-text-secondary">&quot;{thought.content}&quot;</p>
-                            </div>
-                          </div>
-                        </li>
-                      ))}
-                  </ul>
+                <div className="mt-3 flex flex-col gap-3">
+                  {!thoughtsLoading && (() => {
+                    const filtered = thoughts.filter((t) => t.repo_name === repo.name);
+                    const page = repoThoughtsPage[repo.name] ?? 0;
+                    const setPage = (fn: (p: number) => number) =>
+                      setRepoThoughtsPage((prev) => ({ ...prev, [repo.name]: fn(prev[repo.name] ?? 0) }));
+                    return filtered.length > 0
+                      ? renderPaginatedThoughts(filtered, page, setPage)
+                      : <div className="bg-surface rounded-xl py-6 flex items-center justify-center" style={{ border: '1px solid var(--color-border)' }}>
+                          <p className="text-text-muted text-sm">No thoughts yet.</p>
+                        </div>;
+                  })()}
+
                   <form
                     onSubmit={(e) => {
                       e.preventDefault();
                       handleAddThought(repo.name);
                     }}
-                    className="mt-3 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2"
+                    className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2"
                   >
                     <input
                       type="text"
@@ -401,14 +480,14 @@ export default function UserProfilePage() {
                         setRepoThoughtContents((prev) => ({ ...prev, [repo.name]: e.target.value }))
                       }
                       placeholder="Add something..."
-                      className="input-field w-full sm:w-auto"
+                      className="input-field w-full sm:w-auto !py-1.5 !text-sm"
                     />
                     <button
                       type="submit"
                       disabled={repoThoughtLoading[repo.name]}
-                      className="btn-primary w-full sm:w-auto text-sm disabled:opacity-50"
+                      className="btn-primary w-full sm:w-auto disabled:opacity-50 !py-1.5 !text-sm"
                     >
-                      {repoThoughtLoading[repo.name] ? "Adding..." : "Add"}
+                      {repoThoughtLoading[repo.name] ? "Sharing..." : "Share"}
                     </button>
                   </form>
                 </div>
@@ -419,7 +498,7 @@ export default function UserProfilePage() {
         <div className="mt-6 mb-2 text-center">
           <button
             onClick={() => router.push('/')}
-            className="btn-primary sm:w-auto"
+            className="btn-dark sm:w-auto"
             suppressHydrationWarning
           >
             Return to home page

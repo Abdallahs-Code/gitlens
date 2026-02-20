@@ -2,6 +2,7 @@
 
 @theme {
   --color-background-dark: #141414;
+  --color-background-mid: #222222;
   --color-background-light: #3a3a3a;
   --color-background-white: #f5f5f5;
   --color-background-hover: #c0c0c0;
@@ -110,7 +111,7 @@ a:hover {
 .btn-primary {
   background-color: var(--color-accent) !important;
   color: black !important;
-  padding: 0.5rem 1.5rem !important;
+  padding: 0.35rem 1rem !important;
   border-radius: 9999px !important;
   font-weight: 500 !important;
   white-space: nowrap !important;
@@ -123,12 +124,12 @@ a:hover {
   background-color: var(--color-accent-hover) !important;
 }
 
-.btn-secondary {
+.btn-white {
   background-color: var(--color-background-white) !important;
   color: black !important;
   border: 1px solid var(--color-border) !important;
   border-radius: 9999px !important;
-  padding: 0.5rem 0.75rem !important; 
+  padding: 0.35rem 1rem !important;
   font-size: 0.875rem !important; 
   font-weight: 500 !important;
   display: inline-flex !important;
@@ -136,27 +137,6 @@ a:hover {
   gap: 0.5rem !important; 
   cursor: pointer !important;
   transition: background-color 0.2s ease, border-color 0.2s ease !important;
-}
-
-.btn-secondary:hover {
-  background-color: var(--color-background-hover) !important;
-}
-
-.btn-secondary:disabled {
-  opacity: 0.5 !important;
-  cursor: not-allowed !important;
-}
-
-.btn-white {
-  background-color: var(--color-background-white) !important;
-  color: black !important;
-  padding: 0.5rem 1.5rem !important;
-  border-radius: 9999px !important;
-  font-weight: 500 !important;
-  white-space: nowrap !important;
-  cursor: pointer !important;
-  border: none !important;
-  transition: background-color 0.2s !important;
 }
 
 .btn-white:hover {
@@ -168,22 +148,38 @@ a:hover {
   cursor: not-allowed !important;
 }
 
+.btn-dark {
+  background-color: var(--color-background-mid);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px !important;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: opacity 0.2s;
+  cursor: pointer;
+}
+
+.btn-dark:hover {
+  opacity: 0.85;
+}
+
+.btn-dark:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .card {
-  background-color: var(--color-background-light) !important;
-  border: 1px solid var(--color-border) !important;
+  background-color: var(--color-background-mid) !important;
+  border: 1px solid var(--color-background-mid) !important;
   border-radius: 12px !important;
   padding: 1.5rem !important;
   transition: border-color 0.2s !important;
 }
 
 .card-compact {
-  background-color: var(--color-background-light) !important;
-  border: 1px solid var(--color-border) !important;
+  background-color: var(--color-background-mid) !important;
+  border: 1px solid var(--color-background-mid) !important;
   border-radius: 12px;
   padding: 1rem !important;
   transition: border-color 0.2s !important;
-}
-
-.card:hover {
-  border-color: var(--color-border-hover) !important;
 }

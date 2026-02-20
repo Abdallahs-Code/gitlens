@@ -84,16 +84,16 @@ function CompareContent() {
               value={user2Input}
               onChange={(e) => setUser2Input(e.target.value)}
               placeholder="GitHub username"
-              className="input-field flex-1"
+              className="input-field flex-1 !py-1.5 !text-sm"
               suppressHydrationWarning
             />
             <button
               type="submit"
               disabled={loading || !user1}
-              className="btn-primary disabled:opacity-50"
+              className="btn-primary disabled:opacity-50 !py-1.5 !text-sm"
               suppressHydrationWarning
             >
-              {loading ? 'Comparing...' : 'Compare'}
+              {loading ? 'Comparing...' : 'Start'}
             </button>
           </div> 
           {error && (
@@ -169,7 +169,7 @@ function CompareContent() {
         <div className="mt-6 mb-2 text-center">
           <button
             onClick={() => router.push(`/user/${user1}`)}
-            className="btn-white flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn-dark flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Back
           </button>

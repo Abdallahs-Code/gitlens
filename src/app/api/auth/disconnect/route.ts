@@ -11,12 +11,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    let userId: number;
+    let user_id: number;
 
     try {
       const secret = new TextEncoder().encode(process.env.JWT_SECRET);
       const { payload } = await jwtVerify(token, secret);
-      userId = payload.userId as number;
+      user_id = payload.user_id as number;
     } catch (error: any) {
       if (error?.code === 'ERR_JWT_EXPIRED') {
         const response = NextResponse.json({ message: 'Session expired, disconnected' });
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     const { data: user } = await supabaseAdmin
       .from('users')
       .select('github_token_encrypted')
-      .eq('id', userId)
+      .eq('id', user_id)
       .single();
 
     if (user) {
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       await supabaseAdmin
         .from('users')
         .update({ github_token_encrypted: null })
-        .eq('id', userId);
+        .eq('id', user_id);
     }
 
     const response = NextResponse.json({ message: 'Disconnected successfully' });

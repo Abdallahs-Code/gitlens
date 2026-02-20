@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import { Unplug, MessageSquare, Search, Github, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { User, Thought } from "@/lib/types";
+import { Unplug, MessageSquare, Search, Github, Sparkles } from "lucide-react";
 import { getCurrentUser, githubFlow, disconnect, fetchThoughts, formatDate } from "@/lib/api.shared";
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
@@ -78,15 +78,44 @@ export default function HomePage() {
 
   if (authStatus === 'loading') {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center bg-background text-text-primary">
-        <div className="text-xl">Loading...</div>
-      </main>
+      <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative w-16 h-16">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div
+                key={i}
+                className="absolute inset-0 flex justify-center"
+                style={{ transform: `rotate(${i * (360 / 12)}deg)` }}
+              >
+                <div
+                  style={{
+                    width: '4px',
+                    height: '24px',
+                    borderRadius: '2px',
+                    marginTop: '0px',
+                    backgroundColor: '#0fffff',
+                    opacity: (i + 1) / 12,
+                    animation: `radialFade 0.8s linear infinite`,
+                    animationDelay: `${(i / 12) - 0.8}s`,
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+        <style>{`
+          @keyframes radialFade {
+            0%   { opacity: 0.08; }
+            100% { opacity: 1; }
+          }
+        `}</style>
+      </div>
     );
   }
 
   if (authStatus === 'unauthenticated') {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center p-6 bg-background text-text-primary">
+      <main className="flex min-h-screen flex-col items-center justify-center -translate-y-10 p-6 bg-background text-text-primary">
         <h1 className="flex items-center text-5xl font-extrabold mb-8 text-center gap-4">
           Welcome to GitLens
           <img src="/./favicon.ico" alt="Logo" className="w-12 h-12" />
@@ -106,48 +135,55 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-surface flex flex-col">
-      <header className="bg-background border-b border-border">
-        <div className="max-w-6xl mx-auto px-0 sm:px-1 py-4">
-          <div className="flex items-center justify-between">
+      <header className="bg-background border-b border-border shadow-sm">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between h-16">
+
             <div className="flex items-center gap-3">
-              <img src="/./favicon.ico" alt="Logo" className="w-10 h-10" />
-              <h1 className="text-2xl font-bold text-text-primary">
-                GitLens
-              </h1>
+              <img src="/./favicon.ico" alt="Logo" className="w-9 h-9" />
+              <div className="flex flex-col leading-tight">
+                <span className="text-lg font-bold text-text-primary tracking-tight">GitLens</span>
+                <span className="text-[11px] text-text-muted hidden sm:block">GitHub Profile Intelligence</span>
+              </div>
             </div>
-            <div className="flex items-center gap-4">
+
+            <div className="flex items-center gap-3">
               {user && (
                 <div className="flex items-center gap-3">
-                  <img 
-                    src={user.avatar_url} 
-                    alt={user.username} 
-                    className="w-10 h-10 rounded-full" 
-                  />
-                  <div className="hidden sm:flex flex-col">
-                    <span className="font-medium text-text-primary">
-                      {user.username}
-                    </span>
-                    {user.bio && (
-                      <span className="text-sm text-text-muted truncate max-w-xs">
-                        {user.bio}
-                      </span>
-                    )}
+                  <div className="hidden sm:flex flex-col items-end leading-tight">
+                    <span className="text-sm font-semibold text-text-primary">{user.username}</span>
+                    <span className="text-[11px] text-text-muted">Connected via GitHub</span>
+                  </div>
+                  <div className="relative">
+                    <img
+                      src={user.avatar_url}
+                      alt={user.username}
+                      className="w-9 h-9 rounded-full"
+                      style={{ border: '2px solid var(--color-border)' }}
+                    />
+                    <span
+                      className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-500"
+                      style={{ border: '2px solid var(--color-background)' }}
+                    />
                   </div>
                 </div>
               )}
+
+              <div className="h-6 w-px bg-border hidden sm:block" />
+
               <button
                 onClick={handleDisconnect}
-                className="btn-primary disabled:opacity-50 flex items-center gap-2 justify-center text-sm"
                 disabled={disconnectLoading}
+                className="btn-primary disabled:opacity-50 flex items-center gap-2 justify-center text-sm"
               >
                 <Unplug className="w-4 h-4" />
-                <span className="hidden sm:inline">
-                  {disconnectLoading ? "Disconnecting..." : "Disconnect"}
-                </span>
+                <span className="hidden sm:inline">{disconnectLoading ? "Disconnecting..." : "Disconnect"}</span>
               </button>
-            </div>            
+            </div>
+
           </div>
         </div>
+        <div className="h-[2px] w-full" style={{ background: 'linear-gradient(to right, transparent, var(--color-accent), transparent)' }} />
       </header>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 w-full flex-1">
@@ -165,11 +201,11 @@ export default function HomePage() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Enter GitHub username"
-                  className="input-field flex-1"
+                  className="input-field flex-1 !py-1.5 !text-sm"
                 />
                 <button
                   type="submit"
-                  className="btn-primary disabled:opacity-50 flex items-center gap-2 justify-center"
+                  className="btn-primary disabled:opacity-50 flex items-center gap-2 justify-center !py-1.5 !text-sm"
                   disabled={loading}
                 >
                   <Github className="w-4 h-4" />
@@ -219,7 +255,6 @@ export default function HomePage() {
                                   <span className="font-medium text-text-primary">{thought.users.username}</span>
                                   {thought.repo_name && (
                                     <span className="flex items-center gap-1 text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full">
-                                      <Github className="w-3 h-3" />
                                       {thought.repo_name}
                                     </span>
                                   )}
@@ -280,8 +315,8 @@ export default function HomePage() {
                     badge: "AI",
                   },
                   {
-                    title: "Natural Language Repo Search",
-                    description: "Query repositories using plain English. Ask things like \"find me well-maintained TypeScript projects with active contributors\" and let AI handle the rest.",
+                    title: "Explore & Ask",
+                    description: "Navigate any GitHub repository like a file explorer, then chat with AI about any file you open — understand its purpose, decode complex logic, or see how it fits into the bigger picture of the project.",
                     date: "Coming soon",
                     badge: "AI",
                   },
