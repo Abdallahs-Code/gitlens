@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from "react";
+import { Unplug, MessageSquare, Search, Github, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { User } from "@/lib/types";
-import { getCurrentUser, githubFlow, disconnect } from "@/lib/api.shared";
+import { User, Note } from "@/lib/types";
+import { getCurrentUser, githubFlow, disconnect, fetchNotes, formatDate } from "@/lib/api.shared";
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 
@@ -13,11 +14,20 @@ export default function HomePage() {
   const [disconnectLoading, setDisconnectLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [authStatus, setAuthStatus] = useState<AuthStatus>('loading');
+  const [userNotes, setUserNotes] = useState<Note[]>([]);
+  const [notesPage, setNotesPage] = useState(0);
+  const [notesLoading, setNotesLoading] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     checkAuth();
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      loadUserNotes();
+    }
+  }, [user]);
 
   const checkAuth = async () => {
     try {
@@ -26,6 +36,20 @@ export default function HomePage() {
       setAuthStatus(data.status);
     } catch (error: any) {
       setAuthStatus('unauthenticated');
+    }
+  };
+
+  const loadUserNotes = async () => {
+    if (!user) return;
+    setNotesLoading(true);
+    setNotesPage(0); 
+    try {
+      const notes = await fetchNotes(user.username);
+      setUserNotes(notes);
+    } catch (error) {
+      console.error('Failed to load notes:', error);
+    } finally {
+      setNotesLoading(false);
     }
   };
 
@@ -81,48 +105,214 @@ export default function HomePage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-start pt-20 p-6 bg-background text-text-primary">
-      <div className="w-full max-w-4xl mb-8 flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          {user && (
+    <div className="min-h-screen bg-surface flex flex-col">
+      <header className="bg-background border-b border-border">
+        <div className="max-w-6xl mx-auto px-0 sm:px-1 py-4">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <img src={user.avatar_url} alt={user.username} className="w-10 h-10 rounded-full" />
-              <span className="font-medium">Welcome, {user.username}!</span>
+              <img src="/./favicon.ico" alt="Logo" className="w-10 h-10" />
+              <h1 className="text-2xl font-bold text-text-primary">
+                GitLens
+              </h1>
             </div>
-          )}
+            <div className="flex items-center gap-4">
+              {user && (
+                <div className="flex items-center gap-3">
+                  <img 
+                    src={user.avatar_url} 
+                    alt={user.username} 
+                    className="w-10 h-10 rounded-full" 
+                  />
+                  <div className="hidden sm:flex flex-col">
+                    <span className="font-medium text-text-primary">
+                      {user.username}
+                    </span>
+                    {user.bio && (
+                      <span className="text-sm text-text-muted truncate max-w-xs">
+                        {user.bio}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+              <button
+                onClick={handleDisconnect}
+                className="btn-primary disabled:opacity-50 flex items-center gap-2 justify-center text-sm"
+                disabled={disconnectLoading}
+              >
+                <Unplug className="w-4 h-4" />
+                <span className="hidden sm:inline">
+                  {disconnectLoading ? "Disconnecting..." : "Disconnect"}
+                </span>
+              </button>
+            </div>            
+          </div>
         </div>
-          <button
-            onClick={handleDisconnect}
-            className="btn-primary disabled:opacity-50"
-            disabled={disconnectLoading}
-          >
-            {disconnectLoading ? "Disconnecting..." : "Disconnect GitHub"}
-          </button>
-      </div>
+      </header>
 
-      <h1 className="flex items-center text-5xl font-extrabold mb-8 text-center gap-4">
-        Welcome to GitLens
-        <img src="/./favicon.ico" alt="Logo" className="w-12 h-12" />
-      </h1>
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 w-full flex-1">
+        <div className="flex flex-col lg:flex-row gap-6">
+          <div className="flex flex-col gap-6 w-full lg:w-1/2">
 
-      <form onSubmit={handleSearch} className="flex flex-col sm:flex-row items-center gap-4 w-full max-w-md">
-        <input
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          placeholder="Enter GitHub username"
-          className="input-field"
-          suppressHydrationWarning
-        />
-        <button
-          type="submit"
-          className="btn-primary disabled:opacity-50"
-          suppressHydrationWarning
-          disabled={loading}
-        >
-          {loading ? "Searching..." : "Search"}
-        </button>
-      </form>
-    </main>
+            <section className="bg-background rounded-3xl shadow-md p-6" style={{ border: '1px solid var(--color-border)' }}>
+              <div className="flex items-center gap-2 mb-4">
+                <Search className="w-5 h-5 text-accent" />
+                <h2 className="text-xl font-semibold text-text-primary">Explore GitHub Profiles</h2>
+              </div>
+              <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Enter GitHub username"
+                  className="input-field flex-1"
+                />
+                <button
+                  type="submit"
+                  className="btn-primary disabled:opacity-50 flex items-center gap-2 justify-center"
+                  disabled={loading}
+                >
+                  <Github className="w-4 h-4" />
+                  {loading ? "Searching..." : "Search"}
+                </button>
+              </form>
+            </section>
+
+            <section className="bg-background rounded-3xl shadow-md p-6" style={{ border: '1px solid var(--color-border)' }}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5 text-accent" />
+                  <h2 className="text-xl font-semibold text-text-primary">Community Thoughts About You</h2>
+                </div>
+                <span className="text-sm text-text-muted">{userNotes.length} {userNotes.length === 1 ? 'note' : 'notes'}</span>
+              </div>
+
+              {notesLoading ? (
+                <p className="text-text-secondary text-center py-8">Loading notes...</p>
+              ) : userNotes.length === 0 ? (
+                <div className="text-center py-12">
+                  <MessageSquare className="w-12 h-12 text-text-muted mx-auto mb-3" />
+                  <p className="text-text-secondary">No notes yet</p>
+                  <p className="text-text-muted text-sm mt-2">When others leave thoughts on your profile, they'll appear here!</p>
+                </div>
+              ) : (() => {
+                const page = notesPage;
+                const perPage = 3;
+                const totalPages = Math.ceil(userNotes.length / perPage);
+                const sorted = [...userNotes].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+                const visible = sorted.slice(page * perPage, page * perPage + perPage);
+
+                return (
+                  <div className="flex flex-col gap-4">
+                    <div className="bg-surface rounded-xl p-4 flex flex-col gap-4" style={{ border: '1px solid var(--color-border)' }}>
+                      {visible.map((note, index) => (
+                        <div key={index} className={index !== visible.length - 1 ? "pb-4 border-b border-border" : ""}>
+                          <div className="flex items-start gap-3">
+                            <img
+                              src={note.users.avatar_url}
+                              alt={note.users.username}
+                              className="w-9 h-9 rounded-full mt-1 shrink-0"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2 mb-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium text-text-primary">{note.users.username}</span>
+                                  {note.repo_name && (
+                                    <span className="flex items-center gap-1 text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full">
+                                      <Github className="w-3 h-3" />
+                                      {note.repo_name}
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-xs text-text-muted shrink-0">{formatDate(note.created_at)}</span>
+                              </div>
+                              <p className="text-text-secondary text-sm">{note.content}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between">
+                        <button
+                          onClick={() => setNotesPage(p => Math.max(0, p - 1))}
+                          disabled={page === 0}
+                          className="text-sm text-text-muted disabled:opacity-30 hover:text-accent transition-colors cursor-pointer"                        
+                        >
+                          ← Newer
+                        </button>
+                        <span className="text-xs text-text-muted">{page + 1} / {totalPages}</span>
+                        <button
+                          onClick={() => setNotesPage(p => Math.min(totalPages - 1, p + 1))}
+                          disabled={page === totalPages - 1}
+                          className="text-sm text-text-muted disabled:opacity-30 hover:text-accent transition-colors cursor-pointer"                  
+                        >
+                          Older →
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </section>
+          </div>
+
+          <div className="w-full lg:w-1/2">
+            <section className="bg-background rounded-3xl shadow-md p-6 h-full" style={{ border: '1px solid var(--color-border)' }}>
+              <div className="flex items-center gap-2 mb-6">
+                <Sparkles className="w-5 h-5 text-accent" />
+                <h2 className="text-xl font-semibold text-text-primary">What's New</h2>
+              </div>
+
+              <div className="space-y-4">
+                {[
+                  {
+                    title: "AI Profile Summarization",
+                    description: "Let AI craft a concise, human-readable summary of any GitHub profile — highlighting key contributions, activity patterns, and areas of expertise at a glance.",
+                    date: "Live now",
+                    badge: "AI",
+                  },
+                  {
+                    title: "Job Fit Analysis",
+                    description: "Paste a job description and let AI evaluate how well a GitHub profile matches the role — ideal for recruiters, hiring managers, or developers sizing up their own readiness.",
+                    date: "Live now",
+                    badge: "AI",
+                  },
+                  {
+                    title: "Natural Language Repo Search",
+                    description: "Query repositories using plain English. Ask things like \"find me well-maintained TypeScript projects with active contributors\" and let AI handle the rest.",
+                    date: "Coming soon",
+                    badge: "AI",
+                  },
+                ].map((item, index) => (
+                  <div
+                    key={index}
+                    className="bg-surface p-4 rounded-xl flex flex-col gap-1"
+                    style={{ border: '1px solid var(--color-border)' }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-text-primary">{item.title}</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-purple-100 text-purple-700">
+                        {item.badge}
+                      </span>
+                    </div>
+                    <p className="text-sm text-text-secondary">{item.description}</p>
+                    <span className="text-xs text-text-muted mt-1">{item.date}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
+
+        </div>
+      </main>
+
+      <footer className="mt-auto bg-background border-t border-border py-4">
+        <div className="max-w-6xl mx-auto text-center text-sm text-text-muted px-4">
+          © {new Date().getFullYear()} GitLens Community. All rights reserved.
+        </div>
+      </footer>
+    </div>
   );
 }

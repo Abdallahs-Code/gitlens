@@ -30,7 +30,6 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/user/:path*',
-    '/compare/:path*',
     '/api/users/:path*',
     '/api/notes/:path*',
     '/api/compare/:path*',

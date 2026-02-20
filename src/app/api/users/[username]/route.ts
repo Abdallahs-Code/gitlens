@@ -7,9 +7,20 @@ export async function GET(req: NextRequest, context: { params: Promise<{ usernam
 
   try {
     const profileRes = await githubFetch(`https://api.github.com/users/${username}`);
+
     if (!profileRes.ok) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      if (profileRes.status === 404) {
+        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      }
+      if (profileRes.status === 403) {
+        return NextResponse.json({ error: 'GitHub API rate limit exceeded' }, { status: 403 });
+      }
+      if (profileRes.status === 401) {
+        return NextResponse.json({ error: 'Authentication failed' }, { status: 401 });
+      }
+      return NextResponse.json({ error: 'Failed to fetch user' }, { status: 500 });
     }
+
     const profile = await profileRes.json();
     const filteredProfile: GitHubProfile = {
       login: profile.login,
@@ -23,6 +34,17 @@ export async function GET(req: NextRequest, context: { params: Promise<{ usernam
     };
 
     const reposRes = await githubFetch(`https://api.github.com/users/${username}/repos`);
+
+    if (!reposRes.ok) {
+      if (reposRes.status === 403) {
+        return NextResponse.json({ error: 'GitHub API rate limit exceeded' }, { status: 403 });
+      }
+      if (reposRes.status === 401) {
+        return NextResponse.json({ error: 'Authentication failed' }, { status: 401 });
+      }
+      return NextResponse.json({ error: 'Failed to fetch repositories' }, { status: 500 });
+    }
+    
     const repos: GitHubRepo[] = await reposRes.json();
     const filteredRepos: GitHubRepo[] = repos.map((repo) => ({
       name: repo.name,

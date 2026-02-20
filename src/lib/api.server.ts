@@ -3,7 +3,6 @@ import { jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import { supabaseAdmin } from '@/lib/supabase';
 import { decryptToken } from '@/lib/auth';
-import { redirect } from 'next/navigation';
 
 async function getGitHubToken(): Promise<string | null> {
   try {
@@ -14,12 +13,12 @@ async function getGitHubToken(): Promise<string | null> {
 
     const secret = new TextEncoder().encode(process.env.JWT_SECRET);
     const { payload } = await jwtVerify(token, secret);
-    const userId = payload.userId as number;
+    const user_id = payload.user_id as number;
 
     const { data: user, error } = await supabaseAdmin
       .from('users')
       .select('github_token_encrypted')
-      .eq('id', userId)
+      .eq('id', user_id)
       .single();
 
     if (error || !user) return null;
@@ -39,10 +38,6 @@ export async function githubFetch(url: string): Promise<Response> {
       Accept: "application/vnd.github+json",
     }
   });
-
-  if (response.status === 401) {
-    redirect('/api/auth/github');
-  }
-
+  
   return response;
 }

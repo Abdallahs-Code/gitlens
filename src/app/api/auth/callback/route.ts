@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
 
     const { data: existingUser } = await supabaseAdmin
       .from('users')
-      .select('id, github_token_encrypted')
+      .select('github_token_encrypted')
       .eq('github_id', githubUser.id)
       .single();
 
@@ -83,6 +83,7 @@ export async function GET(request: NextRequest) {
           email: githubUser.email,
           avatar_url: githubUser.avatar_url,
           github_token_encrypted: encryptedToken,
+          bio: githubUser.bio,
         },
         { onConflict: 'github_id', ignoreDuplicates: false }
       )

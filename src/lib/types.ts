@@ -3,6 +3,17 @@ export interface User {
   username: string;
   email: string | null;
   avatar_url: string;
+  bio: string | null;
+}
+
+export interface Note {
+  content: string;
+  created_at: string;
+  repo_name: string | null;
+  users: {
+    username: string;
+    avatar_url: string;
+  };
 }
 
 export interface GitHubProfile {
@@ -29,14 +40,6 @@ export interface GitHubRepo {
 export interface GitHubProfileComparison extends GitHubProfile {
   total_stars: number;
   total_commits: number;
-}
-
-export interface Note {
-  id: string;
-  username: string;
-  repo_name: string | null;
-  content: string;
-  created_at: string;
 }
 
 export interface AnalysisItem {

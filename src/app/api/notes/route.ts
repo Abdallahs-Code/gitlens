@@ -11,6 +11,7 @@ export async function GET(req: NextRequest) {
     .select(`
       content,
       created_at,
+      repo_name,
       users:user_id (
         username,
         avatar_url
@@ -43,6 +44,7 @@ export async function POST(req: NextRequest) {
       .select(`
         content,
         created_at,
+        repo_name,
         users:user_id (
           username,
           avatar_url

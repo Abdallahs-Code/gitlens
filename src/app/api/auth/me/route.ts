@@ -12,12 +12,12 @@ export async function GET(request: NextRequest) {
   try {
     const secret = new TextEncoder().encode(process.env.JWT_SECRET);
     const { payload } = await jwtVerify(token, secret);
-    const userId = payload.userId as number;
+    const user_id = payload.user_id as number;
 
     const { data: user, error } = await supabaseAdmin
       .from('users')
-      .select('id, username, email, avatar_url')
-      .eq('id', userId)
+      .select('id, username, email, avatar_url, bio')
+      .eq('id', user_id)
       .single();
 
     if (error || !user) {
@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
         username: user.username,
         email: user.email,
         avatar_url: user.avatar_url,
+        bio: user.bio,
       },
     });
 

@@ -40,10 +40,29 @@ export const fetchNotes = async (
 };
 
 export const addNote = async (
-  note: Omit<Note, "id" | "created_at">
+  note: { username: string; repo_name: string | null; content: string }
 ): Promise<Note> => {
   const { data } = await axios.post(`${API_BASE}/api/notes`, note);
-  return data;
+  return data.note; 
+};
+
+export const formatDate = (timestamp: string): string => {
+  const date = new Date(timestamp);
+  const now = new Date();
+
+  const isToday =
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate();
+
+  if (isToday) {
+    return date.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  return date.toLocaleDateString();
 };
 
 export const compareUsers = async (

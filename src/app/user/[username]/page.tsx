@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import type { GitHubProfile, GitHubRepo, Note } from "@/lib/types";
-import { fetchUserData, fetchNotes, addNote, summarizeProfile } from "@/lib/api.shared";
+import { fetchUserData, fetchNotes, addNote, formatDate, summarizeProfile } from "@/lib/api.shared";
 import axios from "axios";
 import { Frown } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -131,10 +131,6 @@ export default function UserProfilePage() {
     } finally {
       setSummaryLoading(false);
     }
-  };
-
-  const formatDate = (timestamp: string) => {
-    return new Date(timestamp).toLocaleDateString();
   };
 
   function Loader() {
@@ -270,25 +266,32 @@ export default function UserProfilePage() {
             <>
               {notesLoading && <p className="text-text-secondary">Loading thoughts...</p>}
               {notesError && <p className="text-error">{notesError}</p>}
-
-              {notes && (
-                <ul className="space-y-3">
-                  {notes
-                    .filter((note) => note.repo_name === null)
-                    .map((note) => (
-                      <li
-                        key={note.id}
-                        className="bg-surface py-1.5 px-6 rounded text-sm text-text-primary flex justify-between items-center"
-                        style={{ border: '1px solid var(--color-border)' }}
-                      >
-                        <span>&quot;{note.content}&quot;</span>
-                        <span className="text-xs text-text-muted ml-4">
-                          {formatDate(note.created_at)}
-                        </span>
-                      </li>
-                    ))}
-                </ul>
-              )}
+              {notes
+                .filter((note) => note.repo_name === null)
+                .map((note, index) => (
+                  <li
+                    key={index}
+                    className="bg-surface py-2 px-6 rounded text-sm text-text-primary"
+                    style={{ border: '1px solid var(--color-border)' }}
+                  >
+                    <div className="flex items-start gap-3">
+                      <img 
+                        src={note.users.avatar_url} 
+                        alt={note.users.username}
+                        className="w-8 h-8 rounded-full mt-1"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium text-text-primary">{note.users.username}</span>
+                          <span className="text-xs text-text-muted">
+                            {formatDate(note.created_at)}
+                          </span>
+                        </div>
+                        <p className="text-text-secondary">&quot;{note.content}&quot;</p>
+                      </div>
+                    </div>
+                  </li>
+                ))}
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -359,16 +362,28 @@ export default function UserProfilePage() {
                   <ul className="space-y-2">
                     {notes
                       ?.filter((note) => note.repo_name === repo.name)
-                      .map((note) => (
+                      .map((note, index) => (
                         <li
-                          key={note.id}
-                          className="bg-surface py-1.5 px-6 rounded text-sm text-text-primary flex items-center w-full"
+                          key={index}
+                          className="bg-surface py-2 px-6 rounded text-sm text-text-primary"
                           style={{ border: '1px solid var(--color-border)' }}
                         >
-                          <span className="flex-1 min-w-0 truncate">&quot;{note.content}&quot;</span>
-                          <span className="text-xs text-text-muted ml-auto whitespace-nowrap">
-                            {formatDate(note.created_at)}
-                          </span>
+                          <div className="flex items-start gap-3">
+                            <img 
+                              src={note.users.avatar_url} 
+                              alt={note.users.username}
+                              className="w-8 h-8 rounded-full mt-1"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-medium text-text-primary">{note.users.username}</span>
+                                <span className="text-xs text-text-muted">
+                                  {formatDate(note.created_at)}
+                                </span>
+                              </div>
+                              <p className="text-text-secondary">&quot;{note.content}&quot;</p>
+                            </div>
+                          </div>
                         </li>
                       ))}
                   </ul>
