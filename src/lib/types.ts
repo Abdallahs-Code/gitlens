@@ -47,7 +47,8 @@ export interface AnalysisItem {
   count: number;
 }
 
-export interface JobAnalysisResult {
+export interface ProfileAnalysisResult {
+  profile: string;
   seniority: string;
   roles: string[];
   languages: AnalysisItem[];
@@ -56,8 +57,4 @@ export interface JobAnalysisResult {
   databases: AnalysisItem[];
   ci_cd: AnalysisItem[];
   testing: AnalysisItem[];
-}
-
-export interface ProfileAnalysisResult extends JobAnalysisResult {
-  profile: string;
 }

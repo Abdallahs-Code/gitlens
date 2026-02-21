@@ -1,66 +1,48 @@
-import {
-  extractTechnologies,
-  extractArchitectures,
-  extractDatabases,
-  extractCiCdTools,
-  extractTestingTools,
-  extractSeniority,
-  extractRoles,
-  extractLanguages
-} from '@/lib/extractors';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextRequest, NextResponse } from 'next/server';
 
-const SENIORITY_PRIORITY = [
-  'Principal',
-  'Staff',
-  'Lead',
-  'Senior',
-  'Mid',
-  'Junior',
-] as const;
+const SUMMARIZER_THRESHOLD = 900;
 
-function sortMap(map: Map<string, number>) {
-  return Array.from(map.entries())
-    .sort((a, b) => b[1] - a[1])
-    .map(([name, count]) => ({ name, count }));
+const geminiApiKey = process.env.GEMINI_API_KEY;
+
+if (!geminiApiKey) {
+  throw new Error("GEMINI_API_KEY is not set in environment variables");
 }
 
-export function analyzeJobDescription(text: string) {
-  const languages = new Map<string, number>();
-  const tech = new Map<string, number>();
-  const architecture = new Map<string, number>();
-  const databases = new Map<string, number>();
-  const ci_cd = new Map<string, number>();
-  const testing = new Map<string, number>();
+const genAI = new GoogleGenerativeAI(geminiApiKey);
 
-  for (const t of extractTechnologies(text)) tech.set(t, (tech.get(t) || 0) + 1);
-  for (const a of extractArchitectures(text)) architecture.set(a, (architecture.get(a) || 0) + 1);
-  for (const db of extractDatabases(text)) databases.set(db, (databases.get(db) || 0) + 1);
-  for (const ci of extractCiCdTools(text)) ci_cd.set(ci, (ci_cd.get(ci) || 0) + 1);
-  for (const t of extractTestingTools(text)) testing.set(t, (testing.get(t) || 0) + 1);
-  for (const lang of extractLanguages(text)) languages.set(lang, (languages.get(lang) || 0) + 1);
+async function summarizeJobDescription(rawText: string): Promise<string> {
+  const model = genAI.getGenerativeModel({
+    model: "models/gemini-2.5-flash-lite",
+  });
 
-  const detectedSeniority = extractSeniority(text);
-  let finalSeniority = 'Unknown';
-  for (const level of SENIORITY_PRIORITY) {
-    if (detectedSeniority.includes(level)) {
-      finalSeniority = level;
-      break;
-    }
-  }
+  const prompt = `You are a technical job description summarizer.
+Your task is to extract and summarize only the technical and role-relevant information from the job description below.
 
-  const roles = extractRoles(text);
+Focus on:
+- Seniority level and role title
+- Required programming languages and frameworks
+- Must-have technical skills and experience
+- Preferred/nice-to-have technical skills
+- Architecture patterns or system design expectations
+- Databases, cloud platforms, CI/CD tools if mentioned
+- Any domain-specific technical context
 
-  return {
-    seniority: finalSeniority,
-    roles,
-    languages: sortMap(languages),
-    tech: sortMap(tech),
-    architecture: sortMap(architecture),
-    databases: sortMap(databases),
-    ci_cd: sortMap(ci_cd),
-    testing: sortMap(testing),
-  };
+Ignore completely:
+- Company culture, values, and DEI statements
+- Benefits, salary, relocation info
+- "A day in the life" or "About the team" sections
+- Legal disclaimers and equal opportunity statements
+
+Output a concise technical summary in plain text only, no bullet points, no markdown, no quotes, under 100 words.
+
+Job Description:
+${rawText}`;
+
+  const result = await model.generateContent(prompt);
+  const summary = result.response.text().trim();
+
+  return summary;
 }
 
 export async function POST(req: NextRequest) {
@@ -68,14 +50,25 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
 
     if (!body.text || typeof body.text !== 'string') {
-      return NextResponse.json({ error: 'Missing or invalid "text" in request body' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Missing or invalid "text" in request body' },
+        { status: 400 }
+      );
     }
 
-    const result = analyzeJobDescription(body.text);
+    const rawText = body.text.trim();
 
-    return NextResponse.json({ success: true, data: result }, { status: 200 });
+    let job_summary: string;
+
+    if (rawText.length <= SUMMARIZER_THRESHOLD) {
+      job_summary = rawText;
+    } else {
+      job_summary = await summarizeJobDescription(rawText);
+    }
+
+    return NextResponse.json({ success: true, data: job_summary }, { status: 200 });
   } catch (error: any) {
-    console.error('Error analyzing job description:', error);
+    console.error('Error processing job description:', error);
     return NextResponse.json(
       { success: false, error: error.message || 'Internal Server Error' },
       { status: 500 }

@@ -4,7 +4,7 @@ import {
   GitHubRepo, 
   GitHubProfileComparison, 
   Thought, 
-  JobAnalysisResult,
+  AnalysisResult,
   ProfileAnalysisResult
 } from "@/lib/types";
 
@@ -98,9 +98,9 @@ export const summarizeProfile = async (
   return data.summary; 
 };
 
-export const analyzeJobDescription = async (
+export const summarizeJobDescription = async (
   text: string
-): Promise<JobAnalysisResult> => {
+): Promise<string> => {
   const { data } = await axios.post(`${API_BASE}/api/analyze-job`, {
     text,
   });

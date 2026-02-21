@@ -138,20 +138,6 @@ export default function UserProfilePage() {
     }
   };
 
-  function Loader() {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
-        <div className="relative">
-          <div className="w-16 h-16 rounded-full animate-spin" style={{
-            border: '4px solid #e5e7eb',
-            borderTopColor: '#0fffff'
-          }}></div>
-          <p className="mt-4 text-base text-white text-center font-medium">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
   const handleCompare = () => {
     setCompareLoading(true);
     router.push(`/user/${username}/compare`);
@@ -228,11 +214,11 @@ export default function UserProfilePage() {
       <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
         <div className="flex flex-col items-center gap-4">
           <div className="relative w-16 h-16">
-            {Array.from({ length: 12 }).map((_, i) => (
+            {Array.from({ length: 8 }).map((_, i) => (
               <div
                 key={i}
                 className="absolute inset-0 flex justify-center"
-                style={{ transform: `rotate(${i * (360 / 12)}deg)` }}
+                style={{ transform: `rotate(${i * (360 / 8)}deg)` }}
               >
                 <div
                   style={{
@@ -241,9 +227,9 @@ export default function UserProfilePage() {
                     borderRadius: '2px',
                     marginTop: '0px',
                     backgroundColor: '#0fffff',
-                    opacity: (i + 1) / 12,
+                    opacity: (i + 1) / 8,
                     animation: `radialFade 0.8s linear infinite`,
-                    animationDelay: `${(i / 12) - 0.8}s`,
+                    animationDelay: `${(i / 8) - 0.8}s`,
                   }}
                 />
               </div>

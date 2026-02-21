@@ -236,19 +236,30 @@ export async function analyzeProfile(username: string) {
   }
 
   const sortMap = (map: Map<string, number>) =>
-    Array.from(map.entries()).sort((a, b) => b[1] - a[1]).map(([name, count]) => ({ name, count }));
+    Array.from(map.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([name]) => name);
 
-  return {
-    profile: username,
-    seniority: finalSeniority,
-    roles,
-    languages: sortMap(profileLanguages),
-    tech: sortMap(profileTech),
-    architecture: sortMap(profileArch),
-    databases: sortMap(profileDb),
-    ci_cd: sortMap(profileCiCd),
-    testing: sortMap(profileTesting),
-  };
+  const result: Record<string, any> = { profile: username };
+
+  if (finalSeniority !== 'Unknown') result.seniority = finalSeniority;
+  if (roles.length) result.roles = roles;
+
+  const sortedLanguages = sortMap(profileLanguages);
+  const sortedTech = sortMap(profileTech);
+  const sortedArch = sortMap(profileArch);
+  const sortedDatabases = sortMap(profileDb);
+  const sortedCiCd = sortMap(profileCiCd);
+  const sortedTesting = sortMap(profileTesting);
+
+  if (sortedLanguages.length) result.languages = sortedLanguages;
+  if (sortedTech.length) result.tech = sortedTech;
+  if (sortedArch.length) result.architecture = sortedArch;
+  if (sortedDatabases.length) result.databases = sortedDatabases;
+  if (sortedCiCd.length) result.ci_cd = sortedCiCd;
+  if (sortedTesting.length) result.testing = sortedTesting;
+
+  return result;
 }
 
 export async function POST(

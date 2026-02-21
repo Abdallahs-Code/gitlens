@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { analyzeJobDescription, analyzeGitHubProfile } from "@/lib/api.shared";
-import type { JobAnalysisResult, ProfileAnalysisResult } from "@/lib/types";
+import type { ProfileAnalysisResult } from "@/lib/types";
+import { summarizeJobDescription, analyzeGitHubProfile } from "@/lib/api.shared";
 
 export default function JobFitAnalysisPage() {
   const params = useParams();
@@ -14,7 +14,7 @@ export default function JobFitAnalysisPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const [jobAnalysis, setJobAnalysis] = useState<JobAnalysisResult | null>(null);
+  const [jobSummary, setJobSummary] = useState<string | null>(null);
   const [profileAnalysis, setProfileAnalysis] = useState<ProfileAnalysisResult | null>(null);
 
   const handleAnalyze = async () => {
@@ -25,16 +25,16 @@ export default function JobFitAnalysisPage() {
 
     setLoading(true);
     setError(null);
-    setJobAnalysis(null);
+    setJobSummary(null);
     setProfileAnalysis(null);
 
     try {
       const [jobResult, profileResult] = await Promise.all([
-        analyzeJobDescription(jobDescription),
+        summarizeJobDescription(jobDescription),
         analyzeGitHubProfile(username),
       ]);
 
-      setJobAnalysis(jobResult);
+      setJobSummary(jobResult);
       setProfileAnalysis(profileResult);
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || "Failed to analyze");
@@ -112,13 +112,13 @@ export default function JobFitAnalysisPage() {
           </button>
         </div>
 
-        {(jobAnalysis || profileAnalysis) && (
+        {(jobSummary || profileAnalysis) && (
           <section className="space-y-6">
             <h2 className="text-xl font-semibold text-text-primary">
               Analysis Results
             </h2>
 
-            {jobAnalysis && (
+            {jobSummary && (
               <div
                 className="p-4 bg-surface rounded-lg"
                 style={{ border: "1px solid var(--color-border)" }}
@@ -127,7 +127,7 @@ export default function JobFitAnalysisPage() {
                   Job Requirements Analysis
                 </h3>
                 <pre className="text-text-secondary text-sm overflow-x-auto whitespace-pre-wrap break-words">
-                  {JSON.stringify(jobAnalysis, null, 2)}
+                  {jobSummary}
                 </pre>
               </div>
             )}

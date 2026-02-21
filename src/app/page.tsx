@@ -81,11 +81,11 @@ export default function HomePage() {
       <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
         <div className="flex flex-col items-center gap-4">
           <div className="relative w-16 h-16">
-            {Array.from({ length: 12 }).map((_, i) => (
+            {Array.from({ length: 8 }).map((_, i) => (
               <div
                 key={i}
                 className="absolute inset-0 flex justify-center"
-                style={{ transform: `rotate(${i * (360 / 12)}deg)` }}
+                style={{ transform: `rotate(${i * (360 / 8)}deg)` }}
               >
                 <div
                   style={{
@@ -94,9 +94,9 @@ export default function HomePage() {
                     borderRadius: '2px',
                     marginTop: '0px',
                     backgroundColor: '#0fffff',
-                    opacity: (i + 1) / 12,
+                    opacity: (i + 1) / 8,
                     animation: `radialFade 0.8s linear infinite`,
-                    animationDelay: `${(i / 12) - 0.8}s`,
+                    animationDelay: `${(i / 8) - 0.8}s`,
                   }}
                 />
               </div>
@@ -220,7 +220,7 @@ export default function HomePage() {
                   <MessageSquare className="w-5 h-5 text-accent" />
                   <h2 className="text-xl font-semibold text-text-primary">Community Thoughts About You</h2>
                 </div>
-                <span className="text-sm text-text-muted">{userThoughts.length} {userThoughts.length === 1 ? 'thought' : 'thoughts'}</span>
+                <span className="text-sm text-text-muted">{userThoughts.length}</span>
               </div>
 
               {thoughtsLoading ? (
