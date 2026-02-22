@@ -3,9 +3,9 @@ import {
   GitHubProfile,
   GitHubRepo, 
   GitHubProfileComparison, 
-  Thought, 
-  AnalysisResult,
-  ProfileAnalysisResult
+  Thought,
+  ProfileAnalysisResult,
+  MatchResult
 } from "@/lib/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://gitlens-snowy.vercel.app";
@@ -105,6 +105,17 @@ export const summarizeJobDescription = async (
     text,
   });
 
+  return data.data ?? data;
+};
+
+export const matchCandidate = async (
+  jobSummary: string,
+  profileAnalysis: ProfileAnalysisResult
+): Promise<MatchResult> => {
+  const { data } = await axios.post(`${API_BASE}/api/match`, {
+    jobSummary,
+    profileAnalysis,
+  });
   return data.data ?? data;
 };
 

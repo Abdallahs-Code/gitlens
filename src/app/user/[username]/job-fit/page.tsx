@@ -2,8 +2,14 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import type { ProfileAnalysisResult } from "@/lib/types";
-import { summarizeJobDescription, analyzeGitHubProfile } from "@/lib/api.shared";
+import type { MatchResult } from "@/lib/types";
+import { summarizeJobDescription, analyzeGitHubProfile, matchCandidate } from "@/lib/api.shared";
+
+const verdictStyles: Record<MatchResult["verdict"], { color: string; bg: string }> = {
+  "Strong":   { color: "#00ff9d", bg: "rgba(0, 255, 157, 0.08)"  },
+  "Moderate": { color: "#f5a623", bg: "rgba(245, 166, 35, 0.08)" },
+  "Weak":     { color: "#ff4d4d", bg: "rgba(255, 77, 77, 0.08)"  },
+};
 
 export default function JobFitAnalysisPage() {
   const params = useParams();
@@ -13,9 +19,7 @@ export default function JobFitAnalysisPage() {
   const [jobDescription, setJobDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
-  const [jobSummary, setJobSummary] = useState<string | null>(null);
-  const [profileAnalysis, setProfileAnalysis] = useState<ProfileAnalysisResult | null>(null);
+  const [matchResult, setMatchResult] = useState<MatchResult | null>(null);
 
   const handleAnalyze = async () => {
     if (!jobDescription.trim()) {
@@ -25,8 +29,7 @@ export default function JobFitAnalysisPage() {
 
     setLoading(true);
     setError(null);
-    setJobSummary(null);
-    setProfileAnalysis(null);
+    setMatchResult(null);
 
     try {
       const [jobResult, profileResult] = await Promise.all([
@@ -34,14 +37,16 @@ export default function JobFitAnalysisPage() {
         analyzeGitHubProfile(username),
       ]);
 
-      setJobSummary(jobResult);
-      setProfileAnalysis(profileResult);
+      const result = await matchCandidate(jobResult, profileResult);
+      setMatchResult(result);
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || "Failed to analyze");
     } finally {
       setLoading(false);
     }
   };
+
+  const verdictStyle = matchResult ? verdictStyles[matchResult.verdict] : null;
 
   return (
     <div className="flex flex-col min-h-screen overflow-x-hidden bg-surface">
@@ -112,37 +117,66 @@ export default function JobFitAnalysisPage() {
           </button>
         </div>
 
-        {(jobSummary || profileAnalysis) && (
-          <section className="space-y-6">
-            <h2 className="text-xl font-semibold text-text-primary">
-              Analysis Results
-            </h2>
+        {matchResult && verdictStyle && (
+          <section className="space-y-4">
+            <h2 className="text-xl font-semibold text-text-primary">Match Results</h2>
 
-            {jobSummary && (
+            <div
+              className="p-4 rounded-lg flex items-center gap-3"
+              style={{ border: `1px solid ${verdictStyle.color}`, background: verdictStyle.bg }}
+            >
+              <span className="text-2xl font-bold" style={{ color: verdictStyle.color }}>
+                {matchResult.verdict} Match
+              </span>
+            </div>
+
+            <div
+              className="p-4 bg-surface rounded-lg"
+              style={{ border: "1px solid var(--color-border)" }}
+            >
+              <h3 className="text-sm font-semibold text-text-primary uppercase tracking-wide mb-2">
+                Summary
+              </h3>
+              <p className="text-text-secondary text-sm leading-relaxed">
+                {matchResult.explanation}
+              </p>
+            </div>
+
+            {matchResult.strengths.length > 0 && (
               <div
                 className="p-4 bg-surface rounded-lg"
                 style={{ border: "1px solid var(--color-border)" }}
               >
-                <h3 className="text-lg font-semibold text-text-primary mb-3">
-                  Job Requirements Analysis
+                <h3 className="text-sm font-semibold uppercase tracking-wide mb-3" style={{ color: "#00ff9d" }}>
+                  Strengths
                 </h3>
-                <pre className="text-text-secondary text-sm overflow-x-auto whitespace-pre-wrap break-words">
-                  {jobSummary}
-                </pre>
+                <ul className="space-y-2">
+                  {matchResult.strengths.map((s, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-text-secondary">
+                      <span style={{ color: "#00ff9d" }} className="mt-0.5 shrink-0">✓</span>
+                      {s}
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
 
-            {profileAnalysis && (
+            {matchResult.gaps.length > 0 && (
               <div
                 className="p-4 bg-surface rounded-lg"
                 style={{ border: "1px solid var(--color-border)" }}
               >
-                <h3 className="text-lg font-semibold text-text-primary mb-3">
-                  GitHub Profile Analysis
+                <h3 className="text-sm font-semibold uppercase tracking-wide mb-3" style={{ color: "#ff4d4d" }}>
+                  Gaps
                 </h3>
-                <pre className="text-text-secondary text-sm overflow-x-auto whitespace-pre-wrap break-words">
-                  {JSON.stringify(profileAnalysis, null, 2)}
-                </pre>
+                <ul className="space-y-2">
+                  {matchResult.gaps.map((g, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-text-secondary">
+                      <span style={{ color: "#ff4d4d" }} className="mt-0.5 shrink-0">✗</span>
+                      {g}
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
           </section>

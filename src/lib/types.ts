@@ -48,7 +48,7 @@ export interface AnalysisItem {
 }
 
 export interface ProfileAnalysisResult {
-  profile: string;
+  username: string;
   seniority: string;
   roles: string[];
   languages: AnalysisItem[];
@@ -58,3 +58,10 @@ export interface ProfileAnalysisResult {
   ci_cd: AnalysisItem[];
   testing: AnalysisItem[];
 }
+
+export type MatchResult = {
+  verdict: "Strong" | "Moderate" | "Weak";
+  strengths: string[];
+  gaps: string[];
+  explanation: string;
+};

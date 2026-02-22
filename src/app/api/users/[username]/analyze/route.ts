@@ -240,7 +240,7 @@ export async function analyzeProfile(username: string) {
       .sort((a, b) => b[1] - a[1])
       .map(([name]) => name);
 
-  const result: Record<string, any> = { profile: username };
+  const result: Record<string, any> = { username: username };
 
   if (finalSeniority !== 'Unknown') result.seniority = finalSeniority;
   if (roles.length) result.roles = roles;
