@@ -28,7 +28,8 @@ export default function UserProfilePage() {
   const [userThoughtLoading, setUserThoughtLoading] = useState(false);
   const [repoThoughtLoading, setRepoThoughtLoading] = useState<{ [repoName: string]: boolean }>({});
 
-  const [aiSummary, setAiSummary] = useState<string>("");
+  const [displayedSummary, setDisplayedSummary] = useState<string>("");
+  const [typingDone, setTypingDone] = useState(false);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
 
@@ -127,11 +128,24 @@ export default function UserProfilePage() {
 
     setSummaryLoading(true);
     setSummaryError(null);
+    setDisplayedSummary("");
+    setTypingDone(false);
+
     try {
       const summary = await summarizeProfile(profile, repos);
-      setAiSummary(summary);
+
+      let i = 0;
+      const interval = setInterval(() => {
+        if (i < summary.length) {
+          setDisplayedSummary(summary.slice(0, i + 1));
+          i++;
+        } else {
+          clearInterval(interval);
+          setTypingDone(true);
+        }
+      }, 18);
     } catch (err) {
-      setSummaryError("Failed to generate summary. Please try again.");
+      setSummaryError("Failed to generate summary. Too Many Requests.");
       console.error(err);
     } finally {
       setSummaryLoading(false);
@@ -330,10 +344,15 @@ export default function UserProfilePage() {
           </div>
         </div>
 
-        {aiSummary && (
+        {displayedSummary && (
           <section className="mb-6 p-4 bg-surface rounded-lg" style={{ border: '1px solid var(--color-border)' }}>
             <h2 className="text-lg font-semibold mb-2 text-text-primary text-center sm:text-left">AI Summary</h2>
-            <p className="text-text-secondary whitespace-pre-wrap">{aiSummary}</p>
+            <p className="text-text-secondary whitespace-pre-wrap">
+              {displayedSummary}
+              {!typingDone && (
+                <span className="inline-block w-0.5 h-4 ml-0.5 bg-text-secondary align-middle animate-pulse" />
+              )}
+            </p>
           </section>
         )}
 

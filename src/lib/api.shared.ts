@@ -87,6 +87,17 @@ export const compareUsers = async (
   return data;
 };
 
+export const aiCompareUsers = async (
+  user1: GitHubProfileComparison,
+  user2: GitHubProfileComparison
+): Promise<{ analysis: string }> => {
+  const { data } = await axios.post(`${API_BASE}/api/ai-compare`, {
+    user1,
+    user2,
+  });
+  return data;
+};
+
 export const summarizeProfile = async (
   profile: GitHubProfile,
   repos: GitHubRepo[]

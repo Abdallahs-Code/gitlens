@@ -51,7 +51,7 @@ export default function JobFitAnalysisPage() {
   return (
     <div className="flex flex-col min-h-screen overflow-x-hidden bg-surface">
       <main
-        className="mt-4 p-4 sm:p-6 max-w-full sm:max-w-2xl mx-auto bg-background shadow-md rounded-3xl mb-6 px-4 sm:px-6"
+        className="mt-4 p-4 sm:p-6 w-[45%] mx-auto bg-background shadow-md rounded-3xl mb-6 px-4 sm:px-6"
         style={{ border: "1px solid var(--color-border)" }}
       >
         <div className="mb-6">
@@ -101,17 +101,17 @@ export default function JobFitAnalysisPage() {
           </div>
         )}
 
-        <div className="flex flex-col sm:flex-row gap-3 mb-6">
+        <div className="flex flex-col sm:flex-row gap-3 mb-6 justify-center">
           <button
             onClick={handleAnalyze}
             disabled={loading}
-            className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed !py-1.5 !text-sm"
+            className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed !py-1.5 !text-sm w-32"
           >
             {loading ? "Analyzing..." : "Analyze Fit"}
           </button>
           <button
             onClick={() => router.push(`/user/${username}`)}
-            className="btn-dark flex-1 disabled:opacity-50 disabled:cursor-not-allowed !py-1.5 !text-sm"
+            className="btn-dark disabled:opacity-50 disabled:cursor-not-allowed !py-1.5 !text-sm w-32"
           >
             Back
           </button>
