@@ -1,31 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextRequest, NextResponse } from 'next/server';
-
-const geminiApiKey = process.env.GEMINI_API_KEY;
-
-if (!geminiApiKey) {
-  throw new Error("GEMINI_API_KEY is not set in environment variables");
-}
-
-const genAI = new GoogleGenerativeAI(geminiApiKey);
-
-const MATCH_PROMPT = `You are a technical recruiter AI. Given a candidate's GitHub profile analysis and a job summary, evaluate how well the candidate fits the role.
-
-You MUST respond with ONLY valid JSON — no markdown, no code blocks, no extra text.
-
-The JSON must follow this exact structure:
-{
-  "verdict": "Strong" | "Moderate" | "Weak",
-  "strengths": ["string", "string", ...],
-  "gaps": ["string", "string", ...],
-  "explanation": "string"
-}
-
-Guidelines:
-- "verdict" should reflect the overall fit honestly
-- "strengths" should list specific skills or experiences from the profile that align with the job requirements
-- "gaps" should list missing or weak areas compared to the job requirements
-- "explanation" should be a concise 2–3 sentence summary of your reasoning`;
 
 export async function POST(req: NextRequest) {
   try {
@@ -39,23 +12,40 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const input = `Candidate Profile:\n${JSON.stringify(profileAnalysis, null, 2)}\n\nJob Summary:\n${jobSummary}`;
+    const formattedData = `Candidate Profile:\n${JSON.stringify(profileAnalysis)}\n\nJob Summary:\n${jobSummary}`;
 
-    const model = genAI.getGenerativeModel({ model: "models/gemini-2.5-flash-lite" });
+    const llmResponse = await fetch(
+      `${process.env.LLM_SERVER_URL}/evaluate`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          data: formattedData,
+        }),
+      }
+    );
 
-    const result = await model.generateContent([
-      { text: MATCH_PROMPT },
-      { text: input },
-    ]);
+    if (!llmResponse.ok) {
+      throw new Error(
+        `LLM server responded with status ${llmResponse.status}`
+      );
+    }
 
-    const raw = result.response.text().trim();
+    const result = await llmResponse.json();
+
+    if (result.status !== "ok") {
+      throw new Error(result.message || "LLM evaluation failed");
+    }
+
+    const raw = result.result.trim();
 
     let parsed;
     try {
       parsed = JSON.parse(raw);
     } catch {
-      const cleaned = raw.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
-      parsed = JSON.parse(cleaned);
+      parsed = { raw };
     }
 
     return NextResponse.json({ data: parsed });

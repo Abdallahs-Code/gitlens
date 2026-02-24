@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextRequest, NextResponse } from 'next/server';
 
-const SUMMARIZER_THRESHOLD = 900;
+const SUMMARIZER_THRESHOLD = 600;
 
 const geminiApiKey = process.env.GEMINI_API_KEY;
 
@@ -34,7 +34,7 @@ Ignore completely:
 - "A day in the life" or "About the team" sections
 - Legal disclaimers and equal opportunity statements
 
-Output a concise technical summary in plain text only, no bullet points, no markdown, no quotes, under 100 words.
+Output a concise technical summary in plain text only, no bullet points, no markdown, no quotes, under 70 words.
 
 Job Description:
 ${rawText}`;

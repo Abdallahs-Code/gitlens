@@ -145,7 +145,7 @@ export default function UserProfilePage() {
         }
       }, 18);
     } catch (err) {
-      setSummaryError("Failed to generate summary. Too Many Requests.");
+      setSummaryError("Failed to generate summary. Try again later.");
       console.error(err);
     } finally {
       setSummaryLoading(false);

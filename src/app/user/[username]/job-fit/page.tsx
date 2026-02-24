@@ -40,7 +40,7 @@ export default function JobFitAnalysisPage() {
       const result = await matchCandidate(jobResult, profileResult);
       setMatchResult(result);
     } catch (err: any) {
-      setError(err.response?.data?.error || err.message || "Failed to analyze");
+      setError("Failed to analyze. Try again later.");
     } finally {
       setLoading(false);
     }
