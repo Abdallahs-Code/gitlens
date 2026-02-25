@@ -6,8 +6,8 @@ import {
   extractTestingTools,
   extractSeniority,
   extractRoles
-} from '@/lib/extractors';
-import { githubFetch } from '@/lib/api.server';
+} from '@/lib/analyze/extractors';
+import { githubFetch } from '@/lib/api/api.server';
 import { NextRequest, NextResponse } from 'next/server';
 
 function isRelevantFile(path: string): boolean {

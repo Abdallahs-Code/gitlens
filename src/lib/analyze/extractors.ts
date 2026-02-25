@@ -7,7 +7,7 @@ import {
   SENIORITY_KEYWORDS,
   ROLE_KEYWORDS,
   LANGUAGE_KEYWORDS
-} from '@/lib/keywords';
+} from '@/lib/analyze/keywords';
 
 function extractKeywordsFromCategory(text: string, categoryKeywords: Record<string, string>): string[] {
   if (!text) return [];

@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { GitHubProfile, GitHubRepo, Thought } from "@/lib/types";
 import { Frown, MessageSquare, Sparkles, GitCompare, Briefcase } from "lucide-react";
-import { fetchUserData, fetchThoughts, addThought, formatDate, summarizeProfile } from "@/lib/api.shared";
+import { fetchUserData, fetchThoughts, addThought, formatDate, summarizeProfile } from "@/lib/api/api.shared";
 
 export default function UserProfilePage() {
   const { username: urlUsername } = useParams<{ username: string }>();
@@ -37,7 +37,7 @@ export default function UserProfilePage() {
   const [showRepoThoughts, setShowRepoThoughts] = useState<{ [repoName: string]: boolean }>({});
 
   const [compareLoading, setCompareLoading] = useState(false);
-  const [jobFitLoading, setJobFitLoading] = useState(false);
+  const [matchLoading, setMatchLoading] = useState(false);
 
   const [thoughtsPage, setThoughtsPage] = useState(0);
   const [repoThoughtsPage, setRepoThoughtsPage] = useState<{ [repoName: string]: number }>({});
@@ -157,9 +157,9 @@ export default function UserProfilePage() {
     router.push(`/user/${username}/compare`);
   };
 
-  const handleJobFit = () => {
-    setJobFitLoading(true);
-    router.push(`/user/${username}/job-fit`);
+  const handleMatch = () => {
+    setMatchLoading(true);
+    router.push(`/user/${username}/match`);
   };
 
   const renderPaginatedThoughts = (
@@ -334,12 +334,12 @@ export default function UserProfilePage() {
               {compareLoading ? "Redirecting..." : "Compare"}
             </button>
             <button
-              onClick={handleJobFit}
-              disabled={jobFitLoading}
+              onClick={handleMatch}
+              disabled={matchLoading}
               className="btn-primary flex-1 sm:flex-none sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-2"
             >
               <Briefcase className="w-4 h-4" />
-              {jobFitLoading ? "Redirecting..." : "Match"}
+              {matchLoading ? "Redirecting..." : "Match"}
             </button>
           </div>
         </div>

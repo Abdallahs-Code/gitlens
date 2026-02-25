@@ -5,6 +5,7 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get('session_token')?.value;
 
   if (!token) {
+    console.log("Redirecting to home page")
     return NextResponse.redirect(new URL('/', request.url));
   }
 

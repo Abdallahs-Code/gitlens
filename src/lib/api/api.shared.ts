@@ -24,7 +24,7 @@ export const getCurrentUser = async () => {
 };
 
 export const fetchUserData = async (username: string): Promise<{ profile: GitHubProfile; repos: GitHubRepo[] }> => {
-  const { data } = await axios.get(`${API_BASE}/api/users/${username}`);
+  const { data } = await axios.get(`${API_BASE}/api/user/${username}`);
   return {
     profile: data.filteredProfile,
     repos: data.filteredRepos,
@@ -78,11 +78,11 @@ export const formatDate = (timestamp: string): string => {
 };
 
 export const compareUsers = async (
-  user1: string,
-  user2: string
+  username: string,
+  opponent: string
 ): Promise<{ comparison: { [key: string]: GitHubProfileComparison } }> => {
   const { data } = await axios.get(
-    `${API_BASE}/api/compare?user1=${user1}&user2=${user2}`
+    `${API_BASE}/api/user/${username}/compare?opponent=${opponent}`
   );
   return data;
 };
@@ -91,7 +91,7 @@ export const aiCompareUsers = async (
   user1: GitHubProfileComparison,
   user2: GitHubProfileComparison
 ): Promise<{ analysis: string }> => {
-  const { data } = await axios.post(`${API_BASE}/api/ai-compare`, {
+  const { data } = await axios.post(`${API_BASE}/api/ai/compare`, {
     user1,
     user2,
   });
@@ -102,7 +102,7 @@ export const summarizeProfile = async (
   profile: GitHubProfile,
   repos: GitHubRepo[]
 ): Promise<string> => {
-  const { data } = await axios.post(`${API_BASE}/api/summarize`, {
+  const { data } = await axios.post(`${API_BASE}/api/ai/summarize`, {
     profile,
     repos,
   });
@@ -112,7 +112,7 @@ export const summarizeProfile = async (
 export const summarizeJobDescription = async (
   text: string
 ): Promise<string> => {
-  const { data } = await axios.post(`${API_BASE}/api/analyze-job`, {
+  const { data } = await axios.post(`${API_BASE}/api/ai/job`, {
     text,
   });
 
@@ -123,7 +123,7 @@ export const matchCandidate = async (
   jobSummary: string,
   profileAnalysis: ProfileAnalysisResult
 ): Promise<MatchResult> => {
-  const { data } = await axios.post(`${API_BASE}/api/match`, {
+  const { data } = await axios.post(`${API_BASE}/api/ai/match`, {
     jobSummary,
     profileAnalysis,
   });
@@ -134,7 +134,7 @@ export const analyzeGitHubProfile = async (
   username: string
 ): Promise<ProfileAnalysisResult> => {
   const { data } = await axios.post(
-    `${API_BASE}/api/users/${username}/analyze`
+    `${API_BASE}/api/user/${username}/analyze`
   );
 
   return data.data ?? data;

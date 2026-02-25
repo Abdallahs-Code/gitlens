@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/services/supabase';
 
 export async function GET(request: NextRequest) {
   const token = request.cookies.get('session_token')?.value;

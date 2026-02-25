@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { MatchResult } from "@/lib/types";
-import { summarizeJobDescription, analyzeGitHubProfile, matchCandidate } from "@/lib/api.shared";
+import { summarizeJobDescription, analyzeGitHubProfile, matchCandidate } from "@/lib/api/api.shared";
 
 const verdictStyles: Record<MatchResult["verdict"], { color: string; bg: string }> = {
   "Strong":   { color: "#00ff9d", bg: "rgba(0, 255, 157, 0.08)"  },
@@ -11,7 +11,7 @@ const verdictStyles: Record<MatchResult["verdict"], { color: string; bg: string 
   "Weak":     { color: "#ff4d4d", bg: "rgba(255, 77, 77, 0.08)"  },
 };
 
-export default function JobFitAnalysisPage() {
+export default function MatchPage() {
   const params = useParams();
   const router = useRouter();
   const username = params.username as string;
@@ -21,7 +21,7 @@ export default function JobFitAnalysisPage() {
   const [error, setError] = useState<string | null>(null);
   const [matchResult, setMatchResult] = useState<MatchResult | null>(null);
 
-  const handleAnalyze = async () => {
+  const handleAnalyzeMatch = async () => {
     if (!jobDescription.trim()) {
       setError("Please enter a job description");
       return;
@@ -56,7 +56,7 @@ export default function JobFitAnalysisPage() {
       >
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-text-primary text-center sm:text-left">
-            Job Fit Analysis
+            Job Match Analysis
           </h1>
           <p className="text-text-secondary mt-2">
             Analyzing GitHub profile: <span className="text-accent">{username}</span>
@@ -103,11 +103,11 @@ export default function JobFitAnalysisPage() {
 
         <div className="flex flex-col sm:flex-row gap-3 mb-6 justify-center">
           <button
-            onClick={handleAnalyze}
+            onClick={handleAnalyzeMatch}
             disabled={loading}
             className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed !py-1.5 !text-sm w-32"
           >
-            {loading ? "Analyzing..." : "Analyze Fit"}
+            {loading ? "Analyzing..." : "Analyze Match"}
           </button>
           <button
             onClick={() => router.push(`/user/${username}`)}

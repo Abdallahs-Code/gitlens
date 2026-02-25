@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { compareUsers, aiCompareUsers } from '@/lib/api.shared';
+import { compareUsers, aiCompareUsers } from '@/lib/api/api.shared';
 import { Frown, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 import { GitHubProfileComparison } from '@/lib/types';
 

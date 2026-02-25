@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SignJWT } from 'jose';
-import { getRedisClient } from '@/lib/redis';
-import { supabaseAdmin } from '@/lib/supabase';
+import { getRedisClient } from '@/lib/services/redis';
+import { supabaseAdmin } from '@/lib/services/supabase';
 import { encryptToken, decryptToken } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {

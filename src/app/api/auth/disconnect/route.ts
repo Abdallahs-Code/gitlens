@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/services/supabase';
 import { decryptToken } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {

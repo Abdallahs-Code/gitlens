@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { User, Thought } from "@/lib/types";
 import { Unplug, MessageSquare, Search, Github, Sparkles } from "lucide-react";
-import { getCurrentUser, githubFlow, disconnect, fetchThoughts, formatDate } from "@/lib/api.shared";
+import { getCurrentUser, githubFlow, disconnect, fetchThoughts, formatDate } from "@/lib/api/api.shared";
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 

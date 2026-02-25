@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { githubFetch } from '@/lib/api.server';
+import { githubFetch } from '@/lib/api/api.server';
 import { GitHubProfile, GitHubRepo } from '@/lib/types';
 
-export async function GET(req: NextRequest) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { username: string } }
+) {
   const { searchParams } = new URL(req.url);
-  const user1 = searchParams.get('user1');
-  const user2 = searchParams.get('user2');
+  const { username } = params;
+  const opponent = searchParams.get('opponent');
 
-  if (!user1 || !user2) {
+  if (!username || !opponent) {
     return NextResponse.json({ error: 'Two usernames are required' }, { status: 400 });
   }
 
@@ -71,15 +74,15 @@ export async function GET(req: NextRequest) {
       };
     };
 
-    const [data1, data2] = await Promise.all([fetchUserData(user1), fetchUserData(user2)]);
+    const [data1, data2] = await Promise.all([fetchUserData(username), fetchUserData(opponent)]);
 
     if (!data1 || !data2) {
       return NextResponse.json({ error: 'One or both users not found' }, { status: 404 });
     }
 
     const comparison = {
-      [user1]: data1,
-      [user2]: data2,
+      [username]: data1,
+      [opponent]: data2,
     };
 
     return NextResponse.json({ comparison });

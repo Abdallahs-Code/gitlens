@@ -1,7 +1,7 @@
 import 'server-only';
 import { jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/services/supabase';
 import { decryptToken } from '@/lib/auth';
 
 async function getGitHubToken(): Promise<string | null> {

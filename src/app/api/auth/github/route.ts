@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { getRedisClient } from '@/lib/redis';
+import { getRedisClient } from '@/lib/services/redis';
 
 export async function GET() {
   const state = crypto.randomBytes(32).toString('hex');
