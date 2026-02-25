@@ -3,13 +3,12 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { User, Thought } from "@/lib/types";
-import { Unplug, MessageSquare, Search, Github, Sparkles } from "lucide-react";
+import { Unplug, MessageSquare, Search, Github, Newspaper } from "lucide-react";
 import { getCurrentUser, githubFlow, disconnect, fetchThoughts, formatDate } from "@/lib/api/api.shared";
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 
 export default function HomePage() {
-  const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
   const [disconnectLoading, setDisconnectLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
@@ -17,6 +16,8 @@ export default function HomePage() {
   const [userThoughts, setUserThoughts] = useState<Thought[]>([]);
   const [thoughtsPage, setThoughtsPage] = useState(0);
   const [thoughtsLoading, setThoughtsLoading] = useState(false);
+  const [navigatingUser, setNavigatingUser] = useState<string | null>(null);
+  const [githubLoading, setGithubLoading] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -54,6 +55,7 @@ export default function HomePage() {
   };
 
   const handleGitHubFlow = () => {
+    setGithubLoading(true);
     githubFlow();
   };
 
@@ -68,11 +70,17 @@ export default function HomePage() {
     }
   };
 
-  const handleSearch = (e?: React.FormEvent) => {
+  const handleSearch = (searchUsername: string, setLoadingState: boolean = false, e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (username.trim()) {
-      setLoading(true);
-      router.push(`/user/${username.trim()}`);
+    const trimmed = searchUsername.trim();
+    if (trimmed) {
+      if (setLoadingState) {
+        setLoading(true);
+      }
+      else {
+        setNavigatingUser(trimmed);
+      }
+      router.push(`/user/${trimmed}`);
     }
   };
 
@@ -123,11 +131,11 @@ export default function HomePage() {
         <p className="text-lg mb-8 text-center max-w-md">
           Sign in with GitHub to explore profiles and repositories
         </p>
-        <button onClick={handleGitHubFlow} className="btn-primary flex items-center gap-3 text-lg px-8 py-4">
+        <button onClick={handleGitHubFlow} disabled={githubLoading} className="btn-primary flex items-center gap-3 text-lg px-8 py-4 disabled:opacity-50">
           <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
             <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
           </svg>
-          Sign in with GitHub
+          {githubLoading ? "Redirecting..." : "Sign in with GitHub"}
         </button>
       </main>
     );
@@ -195,11 +203,18 @@ export default function HomePage() {
                 <Search className="w-5 h-5 text-accent" />
                 <h2 className="text-xl font-semibold text-text-primary">Explore GitHub Profiles</h2>
               </div>
-              <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const form = e.currentTarget as HTMLFormElement;
+                  const input = form.elements.namedItem("username") as HTMLInputElement;
+                  handleSearch(input.value, true, e);
+                }}
+                className="flex flex-col sm:flex-row gap-3"
+              >
                 <input
                   type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  name="username"
                   placeholder="Enter GitHub username"
                   className="input-field flex-1 !py-1.5 !text-sm"
                 />
@@ -224,7 +239,15 @@ export default function HomePage() {
               </div>
 
               {thoughtsLoading ? (
-                <p className="text-text-secondary text-center py-8">Loading thoughts...</p>
+                <div className="flex items-center justify-center py-8">
+                  <div className="flex items-center gap-3 text-text-secondary text-sm">
+                    <span className="flex gap-1">
+                      <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:0ms]" />
+                      <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:150ms]" />
+                      <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:300ms]" />
+                    </span>
+                  </div>
+                </div>
               ) : userThoughts.length === 0 ? (
                 <div className="text-center py-12">
                   <MessageSquare className="w-12 h-12 text-text-muted mx-auto mb-3" />
@@ -247,12 +270,27 @@ export default function HomePage() {
                             <img
                               src={thought.users.avatar_url}
                               alt={thought.users.username}
-                              className="w-9 h-9 rounded-full mt-1 shrink-0"
+                              className="w-9 h-9 rounded-full mt-1 shrink-0 cursor-pointer"
+                              style={{ 
+                                border: '1px solid var(--color-border)',
+                                cursor: navigatingUser === thought.users.username ? 'wait' : 'pointer'
+                              }}
+                              onClick={() => {
+                                handleSearch(thought.users.username);
+                              }}
                             />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-2 mb-1">
                                 <div className="flex items-center gap-2">
-                                  <span className="font-medium text-text-primary">{thought.users.username}</span>
+                                  <span 
+                                    className="font-medium text-text-primary cursor-pointer hover:underline"
+                                    style={{ cursor: navigatingUser === thought.users.username ? 'wait' : 'pointer' }}
+                                    onClick={() => {
+                                      handleSearch(thought.users.username);
+                                    }}
+                                  >
+                                    {thought.users.username}
+                                  </span>
                                   {thought.repo_name && (
                                     <span className="flex items-center gap-1 text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full">
                                       {thought.repo_name}
@@ -296,7 +334,7 @@ export default function HomePage() {
           <div className="w-full lg:w-1/2">
             <section className="bg-background rounded-3xl shadow-md p-6 h-full" style={{ border: '1px solid var(--color-border)' }}>
               <div className="flex items-center gap-2 mb-6">
-                <Sparkles className="w-5 h-5 text-accent" />
+                <Newspaper className="w-5 h-5 text-accent" />
                 <h2 className="text-xl font-semibold text-text-primary">What's New</h2>
               </div>
 
@@ -309,7 +347,7 @@ export default function HomePage() {
                     badge: "AI",
                   },
                   {
-                    title: "Job Fit Analysis",
+                    title: "Job Match Analysis",
                     description: "Paste a job description and let AI evaluate how well a GitHub profile matches the role — ideal for recruiters, hiring managers, or developers sizing up their own readiness.",
                     date: "Live now",
                     badge: "AI",
@@ -323,17 +361,23 @@ export default function HomePage() {
                 ].map((item, index) => (
                   <div
                     key={index}
-                    className="bg-surface p-4 rounded-xl flex flex-col gap-1"
+                    className="bg-surface p-4 rounded-xl flex flex-col gap-1 relative"
                     style={{ border: '1px solid var(--color-border)' }}
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-text-primary">{item.title}</span>
-                      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-purple-100 text-purple-700">
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-black text-white">
                         {item.badge}
                       </span>
                     </div>
                     <p className="text-sm text-text-secondary">{item.description}</p>
-                    <span className="text-xs text-text-muted mt-1">{item.date}</span>
+                    <span className={`text-xs font-medium absolute bottom-3 right-4 ${ 
+                      item.date === "Live now" ? "text-green-400" :
+                      item.date === "Coming soon" ? "text-cyan-400" :
+                      "text-text-muted"
+                    }`}>
+                      {item.date}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -343,7 +387,7 @@ export default function HomePage() {
         </div>
       </main>
 
-      <footer className="mt-auto bg-background border-t border-border py-4">
+      <footer className="mt-auto bg-footer border-t border-border py-4">
         <div className="max-w-6xl mx-auto text-center text-sm text-text-muted px-4">
           © {new Date().getFullYear()} GitLens Community. All rights reserved.
         </div>

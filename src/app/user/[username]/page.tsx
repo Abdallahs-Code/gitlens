@@ -4,8 +4,8 @@ import axios from "axios";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { GitHubProfile, GitHubRepo, Thought } from "@/lib/types";
-import { Frown, MessageSquare, Sparkles, GitCompare, Briefcase } from "lucide-react";
 import { fetchUserData, fetchThoughts, addThought, formatDate, summarizeProfile } from "@/lib/api/api.shared";
+import { Frown, MessageSquare, Sparkles, GitCompare, Briefcase, Scissors, ChevronDown, ChevronUp } from "lucide-react";
 
 export default function UserProfilePage() {
   const { username: urlUsername } = useParams<{ username: string }>();
@@ -29,6 +29,7 @@ export default function UserProfilePage() {
   const [repoThoughtLoading, setRepoThoughtLoading] = useState<{ [repoName: string]: boolean }>({});
 
   const [displayedSummary, setDisplayedSummary] = useState<string>("");
+  const [summaryExpanded, setSummaryExpanded] = useState(true);
   const [typingDone, setTypingDone] = useState(false);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
@@ -41,6 +42,8 @@ export default function UserProfilePage() {
 
   const [thoughtsPage, setThoughtsPage] = useState(0);
   const [repoThoughtsPage, setRepoThoughtsPage] = useState<{ [repoName: string]: number }>({});
+
+  const [navigatingUser, setNavigatingUser] = useState<string | null>(null);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -130,11 +133,13 @@ export default function UserProfilePage() {
     setSummaryError(null);
     setDisplayedSummary("");
     setTypingDone(false);
+    setSummaryExpanded(true);
 
     try {
       const summary = await summarizeProfile(profile, repos);
 
-      let i = 0;
+      setDisplayedSummary(summary.slice(0, 1));
+      let i = 1;
       const interval = setInterval(() => {
         if (i < summary.length) {
           setDisplayedSummary(summary.slice(0, i + 1));
@@ -145,7 +150,8 @@ export default function UserProfilePage() {
         }
       }, 18);
     } catch (err) {
-      setSummaryError("Failed to generate summary. Try again later.");
+      setSummaryError("AI summary unavailable at the moment.");
+      setTypingDone(true);
       console.error(err);
     } finally {
       setSummaryLoading(false);
@@ -160,6 +166,13 @@ export default function UserProfilePage() {
   const handleMatch = () => {
     setMatchLoading(true);
     router.push(`/user/${username}/match`);
+  };
+
+  const handleUserNavigation = (targetUsername: string) => {
+    const trimmed = targetUsername.trim();
+    if (!trimmed || trimmed === username) return;
+    setNavigatingUser(trimmed);
+    router.push(`/user/${trimmed}`);
   };
 
   const renderPaginatedThoughts = (
@@ -187,10 +200,18 @@ export default function UserProfilePage() {
                   src={thought.users.avatar_url}
                   alt={thought.users.username}
                   className="w-8 h-8 rounded-full mt-1 shrink-0"
+                  style={{ cursor: navigatingUser === thought.users.username ? 'wait' : 'pointer' }}
+                  onClick={() => handleUserNavigation(thought.users.username)}
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-medium text-text-primary text-sm">{thought.users.username}</span>
+                    <span
+                      className="font-medium text-text-primary text-sm hover:underline"
+                      style={{ cursor: navigatingUser === thought.users.username ? 'wait' : 'pointer' }}
+                      onClick={() => handleUserNavigation(thought.users.username)}
+                    >
+                      {thought.users.username}
+                    </span>
                     <span className="text-xs text-text-muted shrink-0">{formatDate(thought.created_at)}</span>
                   </div>
                   <p className="text-text-secondary text-sm">{thought.content}</p>
@@ -319,10 +340,10 @@ export default function UserProfilePage() {
           <div className="flex flex-wrap gap-4 justify-end px-4 sm:px-0 sm:ml-12">
             <button
               onClick={handleSummarize}
-              disabled={summaryLoading}
+              disabled={summaryLoading || (displayedSummary !== "" && !typingDone)}
               className="btn-primary flex-1 sm:flex-none sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-2"
             >
-              <Sparkles className="w-4 h-4" />
+              <Scissors className="w-4 h-4" />
               {summaryLoading ? "Summarizing..." : "Summarize"}
             </button>
             <button
@@ -344,21 +365,49 @@ export default function UserProfilePage() {
           </div>
         </div>
 
-        {displayedSummary && (
-          <section className="mb-6 p-4 bg-surface rounded-lg" style={{ border: '1px solid var(--color-border)' }}>
-            <h2 className="text-lg font-semibold mb-2 text-text-primary text-center sm:text-left">AI Summary</h2>
-            <p className="text-text-secondary whitespace-pre-wrap">
-              {displayedSummary}
-              {!typingDone && (
-                <span className="inline-block w-0.5 h-4 ml-0.5 bg-text-secondary align-middle animate-pulse" />
+        {(displayedSummary || summaryLoading || summaryError) && (
+          <div
+            className="rounded-2xl overflow-hidden mb-6"
+            style={{ border: '1px solid var(--color-border)' }}
+          >
+            <button
+              type="button"
+              onClick={() => setSummaryExpanded((prev) => !prev)}
+              className="w-full flex items-center justify-between px-4 py-3 bg-surface hover:bg-surface/80 transition-colors"
+            >
+              <span className="flex items-center gap-2 font-semibold text-text-primary">
+                <Sparkles className="w-4 h-4 text-accent" />
+                AI Summary
+              </span>
+              {summaryExpanded ? (
+                <ChevronUp className="w-4 h-4 text-text-muted" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-text-muted" />
               )}
-            </p>
-          </section>
-        )}
+            </button>
 
-        {summaryError && (
-          <div className="mb-6 p-4 bg-surface rounded-lg" style={{ border: '1px solid var(--color-error)' }}>
-            <p className="text-error">{summaryError}</p>
+            {summaryExpanded && (
+              <div className="px-4 py-4 bg-background">
+                {summaryLoading ? (
+                  <div className="flex items-center gap-3 text-text-secondary text-sm">
+                    <span className="flex gap-1">
+                      <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:0ms]" />
+                      <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:150ms]" />
+                      <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:300ms]" />
+                    </span>
+                  </div>
+                ) : summaryError ? (
+                  <p className="text-text-muted text-sm italic">{summaryError}</p>
+                ) : displayedSummary ? (
+                  <p className="text-text-secondary text-sm leading-relaxed whitespace-pre-line">
+                    {displayedSummary}
+                    {!typingDone && (
+                      <span className="inline-block w-0.5 h-4 ml-0.5 bg-text-secondary align-middle animate-pulse" />
+                    )}
+                  </p>
+                ) : null}
+              </div>
+            )}
           </div>
         )}
 
@@ -378,7 +427,16 @@ export default function UserProfilePage() {
 
           {showThoughts && (
             <div className="flex flex-col gap-3">
-              {thoughtsLoading && <p className="text-text-secondary">Loading thoughts...</p>}
+              {thoughtsLoading && (
+                <div className="flex items-center gap-3 text-text-secondary text-sm">
+                  <span className="flex gap-1">
+                    <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:0ms]" />
+                    <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:150ms]" />
+                    <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:300ms]" />
+                  </span>
+                </div>
+              )}
+              
               {thoughtsError && <p className="text-error">{thoughtsError}</p>}
 
               {!thoughtsLoading && !thoughtsError && (() => {
@@ -510,7 +568,7 @@ export default function UserProfilePage() {
           </button>
         </div>
       </main>
-      <footer className="mt-auto bg-background border-t border-border py-4 w-full">
+      <footer className="mt-auto bg-footer border-t border-border py-4 w-full">
         <div className="max-w-4xl mx-auto text-center text-sm text-text-muted px-4">
           © {new Date().getFullYear()} GitLens Community. All rights reserved.
         </div>

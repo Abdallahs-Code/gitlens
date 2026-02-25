@@ -35,6 +35,8 @@ function CompareContent() {
       return;
     }
 
+    setUser1Data(null); 
+    setUser2Data(null);
     setLoading(true);
     setError('');
     setAiAnalysis('');
@@ -67,6 +69,7 @@ function CompareContent() {
         }, 18);
       } catch {
         setAiAnalysis('');
+        setAiLoading(false);
       }
     } catch {
       setError('Failed to compare users. Please check the username and try again.');
@@ -129,7 +132,7 @@ function CompareContent() {
 
         {user1Data && user2Data && (
           <div className="space-y-6">
-            <div className="flex items-start mb-4">
+            <div className="flex items-center mb-4">
               <div className="flex-1 text-center pl-4">
                 <img
                   src={user1Data.avatar_url}
@@ -264,7 +267,7 @@ function CompareContent() {
                     </p>
                   ) : aiAnalysis === '' && !aiLoading ? (
                     <p className="text-text-muted text-sm italic">
-                      AI analysis unavailable.
+                      AI analysis unavailable at the moment.
                     </p>
                   ) : null}
                 </div>
@@ -277,13 +280,14 @@ function CompareContent() {
           <button
             onClick={() => router.push(`/user/${user1}`)}
             className="btn-dark w-32 disabled:opacity-50 disabled:cursor-not-allowed"
+            suppressHydrationWarning
           >
             Back
           </button>
         </div>
       </main>
 
-      <footer className="mt-auto bg-background border-t border-border py-4">
+      <footer className="mt-auto bg-footer border-t border-border py-4">
         <div className="max-w-4xl mx-auto text-center text-sm text-text-muted">
           © {new Date().getFullYear()} GitLens Community. All rights reserved.
         </div>

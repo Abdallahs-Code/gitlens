@@ -77,6 +77,10 @@ a:hover {
   background-color: var(--color-background-light) !important;
 }
 
+.bg-footer {
+  background-color: var(--color-background-mid) !important;
+}
+
 .text-text-primary {
   color: var(--color-text-primary) !important;
 }

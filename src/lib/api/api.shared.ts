@@ -77,6 +77,17 @@ export const formatDate = (timestamp: string): string => {
   return date.toLocaleDateString();
 };
 
+export const summarizeProfile = async (
+  profile: GitHubProfile,
+  repos: GitHubRepo[]
+): Promise<string> => {
+  const { data } = await axios.post(`${API_BASE}/api/ai/summarize`, {
+    profile,
+    repos,
+  });
+  return data.summary; 
+};
+
 export const compareUsers = async (
   username: string,
   opponent: string
@@ -98,35 +109,13 @@ export const aiCompareUsers = async (
   return data;
 };
 
-export const summarizeProfile = async (
-  profile: GitHubProfile,
-  repos: GitHubRepo[]
-): Promise<string> => {
-  const { data } = await axios.post(`${API_BASE}/api/ai/summarize`, {
-    profile,
-    repos,
-  });
-  return data.summary; 
-};
-
-export const summarizeJobDescription = async (
+export const analyzeJobDescription = async (
   text: string
 ): Promise<string> => {
   const { data } = await axios.post(`${API_BASE}/api/ai/job`, {
     text,
   });
 
-  return data.data ?? data;
-};
-
-export const matchCandidate = async (
-  jobSummary: string,
-  profileAnalysis: ProfileAnalysisResult
-): Promise<MatchResult> => {
-  const { data } = await axios.post(`${API_BASE}/api/ai/match`, {
-    jobSummary,
-    profileAnalysis,
-  });
   return data.data ?? data;
 };
 
@@ -137,5 +126,16 @@ export const analyzeGitHubProfile = async (
     `${API_BASE}/api/user/${username}/analyze`
   );
 
+  return data.data ?? data;
+};
+
+export const match = async (
+  jobSummary: string,
+  profileAnalysis: ProfileAnalysisResult
+): Promise<MatchResult> => {
+  const { data } = await axios.post(`${API_BASE}/api/ai/match`, {
+    jobSummary,
+    profileAnalysis,
+  });
   return data.data ?? data;
 };

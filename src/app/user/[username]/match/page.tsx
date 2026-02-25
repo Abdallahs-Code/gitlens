@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { MatchResult } from "@/lib/types";
-import { summarizeJobDescription, analyzeGitHubProfile, matchCandidate } from "@/lib/api/api.shared";
+import { analyzeJobDescription, analyzeGitHubProfile, match } from "@/lib/api/api.shared";
 
 const verdictStyles: Record<MatchResult["verdict"], { color: string; bg: string }> = {
   "Strong":   { color: "#00ff9d", bg: "rgba(0, 255, 157, 0.08)"  },
@@ -33,11 +33,11 @@ export default function MatchPage() {
 
     try {
       const [jobResult, profileResult] = await Promise.all([
-        summarizeJobDescription(jobDescription),
+        analyzeJobDescription(jobDescription),
         analyzeGitHubProfile(username),
       ]);
 
-      const result = await matchCandidate(jobResult, profileResult);
+      const result = await match(jobResult, profileResult);
       setMatchResult(result);
     } catch (err: any) {
       setError("Failed to analyze. Try again later.");
@@ -183,7 +183,7 @@ export default function MatchPage() {
         )}
       </main>
 
-      <footer className="mt-auto bg-background border-t border-border py-4 w-full">
+      <footer className="mt-auto bg-footer border-t border-border py-4 w-full">
         <div className="max-w-4xl mx-auto text-center text-sm text-text-muted px-4">
           © {new Date().getFullYear()} GitLens Community. All rights reserved.
         </div>
