@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { compareUsers, aiCompareUsers } from '@/lib/api/api.shared';
+import { compareUsers, aiCompareUsers } from '@/lib/api/api.client';
 import { Frown, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 import { GitHubProfileComparison } from '@/lib/types';
 
@@ -115,11 +115,12 @@ function CompareContent() {
             />
             <button
               type="submit"
-              disabled={loading || !user1}
-              className="btn-primary disabled:opacity-50 !py-1.5 !text-sm" style={{ flex: '0 0 30%' }}
+              disabled={loading || aiLoading || (!!displayedAnalysis && !typingDone) || !user1}
+              className="btn-primary disabled:opacity-50 !py-1.5 !text-base font-bold"
+              style={{ flex: '0 0 30%' }}
               suppressHydrationWarning
             >
-              {loading ? 'Comparing...' : 'Start'}
+              {loading ? 'Comparing...' : 'Start Comparison'}
             </button>
           </div>
           {error && (

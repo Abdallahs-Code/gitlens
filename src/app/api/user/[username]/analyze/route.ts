@@ -7,7 +7,7 @@ import {
   extractSeniority,
   extractRoles
 } from '@/lib/analyze/extractors';
-import { githubFetch } from '@/lib/api/api.server';
+import { githubFetch, GitHubTokenExpiredError } from '@/lib/api/api.server';
 import { NextRequest, NextResponse } from 'next/server';
 
 function isRelevantFile(path: string): boolean {
@@ -100,6 +100,7 @@ async function analyzeRepo(repoFullName: string) {
       }
       return '';
     } catch (error) {
+      if (error instanceof GitHubTokenExpiredError) throw error;
       console.error(`Error fetching ${file.path}:`, error);
       return '';
     }
@@ -283,8 +284,10 @@ export async function POST(
       { status: 200 }
     );
   } catch (error: any) {
+    if (error instanceof GitHubTokenExpiredError) {
+      return NextResponse.json({ error: 'GitHub token expired' }, { status: 401 });
+    }
     console.error('Error analyzing GitHub profile:', error);
-
     return NextResponse.json(
       { success: false, error: error.message || 'Internal Server Error' },
       { status: 500 }

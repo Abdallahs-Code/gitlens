@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { MatchResult } from "@/lib/types";
-import { analyzeJobDescription, analyzeGitHubProfile, match } from "@/lib/api/api.shared";
+import { analyzeJobDescription, analyzeGitHubProfile, match } from "@/lib/api/api.client";
 
 const verdictStyles: Record<MatchResult["verdict"], { color: string; bg: string }> = {
   "Strong":   { color: "#00ff9d", bg: "rgba(0, 255, 157, 0.08)"  },

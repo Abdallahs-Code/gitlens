@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { githubFetch } from '@/lib/api/api.server';
+import { githubFetch, GitHubTokenExpiredError } from '@/lib/api/api.server';
 import { GitHubProfile, GitHubRepo } from '@/lib/types';
 
 export async function GET(req: NextRequest, context: { params: Promise<{ username: string }> }) {
@@ -14,9 +14,6 @@ export async function GET(req: NextRequest, context: { params: Promise<{ usernam
       }
       if (profileRes.status === 403) {
         return NextResponse.json({ error: 'GitHub API rate limit exceeded' }, { status: 403 });
-      }
-      if (profileRes.status === 401) {
-        return NextResponse.json({ error: 'Authentication failed' }, { status: 401 });
       }
       return NextResponse.json({ error: 'Failed to fetch user' }, { status: 500 });
     }
@@ -39,9 +36,6 @@ export async function GET(req: NextRequest, context: { params: Promise<{ usernam
       if (reposRes.status === 403) {
         return NextResponse.json({ error: 'GitHub API rate limit exceeded' }, { status: 403 });
       }
-      if (reposRes.status === 401) {
-        return NextResponse.json({ error: 'Authentication failed' }, { status: 401 });
-      }
       return NextResponse.json({ error: 'Failed to fetch repositories' }, { status: 500 });
     }
     
@@ -57,7 +51,10 @@ export async function GET(req: NextRequest, context: { params: Promise<{ usernam
     }));
 
     return NextResponse.json({ filteredProfile, filteredRepos });
-  } catch {
+  } catch (error) {
+    if (error instanceof GitHubTokenExpiredError) {
+      return NextResponse.json({ error: 'GitHub token expired' }, { status: 401 });
+    }
     return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 });
   }
 }

@@ -4,7 +4,7 @@ import axios from "axios";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { GitHubProfile, GitHubRepo, Thought } from "@/lib/types";
-import { fetchUserData, fetchThoughts, addThought, formatDate, summarizeProfile } from "@/lib/api/api.shared";
+import { fetchUserData, fetchThoughts, addThought, formatDate, summarizeProfile } from "@/lib/api/api.client";
 import { Frown, MessageSquare, Sparkles, GitCompare, Briefcase, Scissors, ChevronDown, ChevronUp } from "lucide-react";
 
 export default function UserProfilePage() {

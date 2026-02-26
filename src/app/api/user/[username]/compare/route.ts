@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { githubFetch } from '@/lib/api/api.server';
+import { githubFetch, GitHubTokenExpiredError } from '@/lib/api/api.server';
 import { GitHubProfile, GitHubRepo } from '@/lib/types';
 
 export async function GET(
@@ -92,6 +92,9 @@ export async function GET(
 
     return NextResponse.json({ comparison });
   } catch (error) {
+    if (error instanceof GitHubTokenExpiredError) {
+      return NextResponse.json({ error: 'GitHub token expired' }, { status: 401 });
+    }
     console.error(error);
     return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
   }

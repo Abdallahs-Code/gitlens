@@ -4,6 +4,8 @@ import { cookies } from 'next/headers';
 import { supabaseAdmin } from '@/lib/services/supabase';
 import { decryptToken } from '@/lib/auth';
 
+export class GitHubTokenExpiredError extends Error {}
+
 async function getGitHubToken(): Promise<string | null> {
   try {
     const cookieStore = await cookies();
@@ -38,6 +40,10 @@ export async function githubFetch(url: string): Promise<Response> {
       Accept: "application/vnd.github+json",
     }
   });
+
+  if (response.status === 401) {
+    throw new GitHubTokenExpiredError();
+  }
   
   return response;
 }

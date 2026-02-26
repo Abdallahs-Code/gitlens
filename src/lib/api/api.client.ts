@@ -24,11 +24,19 @@ export const getCurrentUser = async () => {
 };
 
 export const fetchUserData = async (username: string): Promise<{ profile: GitHubProfile; repos: GitHubRepo[] }> => {
-  const { data } = await axios.get(`${API_BASE}/api/user/${username}`);
-  return {
-    profile: data.filteredProfile,
-    repos: data.filteredRepos,
-  };
+  try {
+    const { data } = await axios.get(`${API_BASE}/api/user/${username}`);
+    return {
+      profile: data.filteredProfile,
+      repos: data.filteredRepos,
+    };
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      await disconnect();
+      window.location.href = '/';
+    }
+    throw error;
+  }
 };
 
 export const fetchThoughts = async (
@@ -92,10 +100,18 @@ export const compareUsers = async (
   username: string,
   opponent: string
 ): Promise<{ comparison: { [key: string]: GitHubProfileComparison } }> => {
-  const { data } = await axios.get(
-    `${API_BASE}/api/user/${username}/compare?opponent=${opponent}`
-  );
-  return data;
+  try {
+    const { data } = await axios.get(
+      `${API_BASE}/api/user/${username}/compare?opponent=${opponent}`
+    );
+    return data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      await disconnect();
+      window.location.href = '/';
+    }
+    throw error;
+  }
 };
 
 export const aiCompareUsers = async (
@@ -122,11 +138,18 @@ export const analyzeJobDescription = async (
 export const analyzeGitHubProfile = async (
   username: string
 ): Promise<ProfileAnalysisResult> => {
-  const { data } = await axios.post(
-    `${API_BASE}/api/user/${username}/analyze`
-  );
-
-  return data.data ?? data;
+  try {
+    const { data } = await axios.post(
+      `${API_BASE}/api/user/${username}/analyze`
+    );
+    return data.data ?? data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      await disconnect();
+      window.location.href = '/';
+    }
+    throw error;
+  }
 };
 
 export const match = async (
