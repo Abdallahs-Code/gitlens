@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { User, Thought } from "@/lib/types";
-import { Unplug, MessageSquare, Search, Github, Newspaper } from "lucide-react";
+import { Unplug, MessageSquare, Search, Github, Newspaper, Sparkles } from "lucide-react";
 import { getCurrentUser, githubFlow, disconnect, fetchThoughts, formatDate } from "@/lib/api/api.client";
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
@@ -135,7 +135,15 @@ export default function HomePage() {
           <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
             <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
           </svg>
-          {githubLoading ? "Redirecting..." : "Sign in with GitHub"}
+          {githubLoading ? (
+            <span className="flex gap-1 items-center justify-center">
+              <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:0ms]" />
+              <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:150ms]" />
+              <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:300ms]" />
+            </span>
+          ) : (
+            "Sign in with GitHub"
+          )}
         </button>
       </main>
     );
@@ -151,7 +159,6 @@ export default function HomePage() {
               <img src="/./favicon.ico" alt="Logo" className="w-9 h-9" />
               <div className="flex flex-col leading-tight">
                 <span className="text-lg font-bold text-text-primary tracking-tight">GitLens</span>
-                <span className="text-[11px] text-text-muted hidden sm:block">GitHub Profile Intelligence</span>
               </div>
             </div>
 
@@ -170,8 +177,8 @@ export default function HomePage() {
                       style={{ border: '2px solid var(--color-border)' }}
                     />
                     <span
-                      className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-500"
-                      style={{ border: '2px solid var(--color-background)' }}
+                      className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full"
+                      style={{ background: "#4eff91", border: '2px solid var(--color-background)' }}
                     />
                   </div>
                 </div>
@@ -185,7 +192,17 @@ export default function HomePage() {
                 className="btn-primary disabled:opacity-50 flex items-center gap-2 justify-center text-sm"
               >
                 <Unplug className="w-4 h-4" />
-                <span className="hidden sm:inline">{disconnectLoading ? "Disconnecting..." : "Disconnect"}</span>
+                <span className="hidden sm:inline">
+                  {disconnectLoading ? (
+                    <span className="flex gap-1 items-center justify-center">
+                      <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:0ms]" />
+                      <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:150ms]" />
+                      <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:300ms]" />
+                    </span>
+                  ) : (
+                    "Disconnect"
+                  )}
+                </span>
               </button>
             </div>
 
@@ -223,8 +240,18 @@ export default function HomePage() {
                   className="btn-primary disabled:opacity-50 flex items-center gap-2 justify-center !py-1.5 !text-sm"
                   disabled={loading}
                 >
-                  <Github className="w-4 h-4" />
-                  {loading ? "Searching..." : "Search"}
+                  {loading ? (
+                    <span className="flex gap-1 items-center justify-center">
+                      <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:0ms]" />
+                      <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:150ms]" />
+                      <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:300ms]" />
+                    </span>
+                  ) : (
+                    <>
+                      <Github className="w-4 h-4" />
+                      Search
+                    </>
+                  )}
                 </button>
               </form>
             </section>
@@ -366,16 +393,17 @@ export default function HomePage() {
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-text-primary">{item.title}</span>
-                      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-black text-white">
-                        {item.badge}
-                      </span>
+                      <Sparkles className="w-4 h-4 text-accent" />
                     </div>
                     <p className="text-sm text-text-secondary">{item.description}</p>
-                    <span className={`text-xs font-medium absolute bottom-3 right-4 ${ 
-                      item.date === "Live now" ? "text-green-400" :
-                      item.date === "Coming soon" ? "text-cyan-400" :
-                      "text-text-muted"
-                    }`}>
+                    <span
+                      className="text-xs font-medium absolute bottom-3 right-4"
+                      style={{
+                        color: item.date === "Live now" ? "#4eff91" :
+                              item.date === "Coming soon" ? "#22ffff" :
+                              "var(--color-text-muted)"
+                      }}
+                    >
                       {item.date}
                     </span>
                   </div>

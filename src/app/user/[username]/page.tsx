@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { GitHubProfile, GitHubRepo, Thought } from "@/lib/types";
 import { fetchUserData, fetchThoughts, addThought, formatDate, summarizeProfile } from "@/lib/api/api.client";
-import { Frown, MessageSquare, Sparkles, GitCompare, Briefcase, Scissors, ChevronDown, ChevronUp } from "lucide-react";
+import { Frown, MessageSquare, Sparkles, GitCompare, Briefcase, Scissors, ChevronDown, ChevronUp, Star, GitFork, Code2 } from "lucide-react";
 
 export default function UserProfilePage() {
   const { username: urlUsername } = useParams<{ username: string }>();
@@ -44,6 +44,8 @@ export default function UserProfilePage() {
   const [repoThoughtsPage, setRepoThoughtsPage] = useState<{ [repoName: string]: number }>({});
 
   const [navigatingUser, setNavigatingUser] = useState<string | null>(null);
+
+  const [navigating, setNavigating] = useState(false);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -150,7 +152,7 @@ export default function UserProfilePage() {
         }
       }, 18);
     } catch (err) {
-      setSummaryError("AI summary unavailable at the moment.");
+      setSummaryError("Gemini API quota reached :(");
       setTypingDone(true);
       console.error(err);
     } finally {
@@ -344,7 +346,15 @@ export default function UserProfilePage() {
               className="btn-primary flex-1 sm:flex-none sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-2"
             >
               <Scissors className="w-4 h-4" />
-              {summaryLoading ? "Summarizing..." : "Summarize"}
+              {summaryLoading ? (
+                <span className="flex gap-1 items-center justify-center">
+                  <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:0ms]" />
+                  <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:150ms]" />
+                  <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:300ms]" />
+                </span>
+              ) : (
+                "Summarize"
+              )}
             </button>
             <button
               onClick={handleCompare}
@@ -352,7 +362,15 @@ export default function UserProfilePage() {
               className="btn-primary flex-1 sm:flex-none sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-2"
             >
               <GitCompare className="w-4 h-4" />
-              {compareLoading ? "Redirecting..." : "Compare"}
+              {compareLoading ? (
+                <span className="flex gap-1 items-center justify-center">
+                  <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:0ms]" />
+                  <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:150ms]" />
+                  <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:300ms]" />
+                </span>
+              ) : (
+                "Compare"
+              )}
             </button>
             <button
               onClick={handleMatch}
@@ -360,7 +378,15 @@ export default function UserProfilePage() {
               className="btn-primary flex-1 sm:flex-none sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-2"
             >
               <Briefcase className="w-4 h-4" />
-              {matchLoading ? "Redirecting..." : "Match"}
+              {matchLoading ? (
+                <span className="flex gap-1 items-center justify-center">
+                  <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:0ms]" />
+                  <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:150ms]" />
+                  <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:300ms]" />
+                </span>
+              ) : (
+                "Match"
+              )}
             </button>
           </div>
         </div>
@@ -494,9 +520,17 @@ export default function UserProfilePage() {
               <p className="text-text-secondary mt-1 break-words">{repo.description}</p>
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mt-2 gap-2 sm:gap-0">
                 <div className="flex flex-wrap gap-4 text-sm text-text-muted">
-                  <span>⭐ {repo.stargazers_count}</span>
-                  <span>🍴 {repo.forks_count}</span>
-                  <span>{repo.language}</span>
+                  <span className="flex items-center gap-1">
+                    <Star className="w-3.5 h-3.5" /> {repo.stargazers_count}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <GitFork className="w-3.5 h-3.5" /> {repo.forks_count}
+                  </span>
+                  {repo.language && (
+                    <span className="flex items-center gap-1">
+                      <Code2 className="w-3.5 h-3.5" /> {repo.language}
+                    </span>
+                  )}
                 </div>
 
                 <button
@@ -560,8 +594,10 @@ export default function UserProfilePage() {
         </ul>
         <div className="mt-6 mb-2 text-center">
           <button
-            onClick={() => router.push('/')}
-            className="btn-dark sm:w-auto"
+            onClick={() => { setNavigating(true); router.push('/'); }}
+            disabled={navigating}
+            className="btn-dark sm:w-auto disabled:opacity-50"
+            style={{ cursor: navigating ? 'wait' : 'pointer' }}
             suppressHydrationWarning
           >
             Return to home page

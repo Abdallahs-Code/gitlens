@@ -21,6 +21,7 @@ function CompareContent() {
   const [aiLoading, setAiLoading] = useState(false);
   const [error, setError] = useState('');
   const [aiExpanded, setAiExpanded] = useState(true);
+  const [navigating, setNavigating] = useState(false);
 
   const handleCompare = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,17 +111,25 @@ function CompareContent() {
               value={user2Input}
               onChange={(e) => setUser2Input(e.target.value)}
               placeholder="GitHub username"
-              className="input-field !py-1.5 !text-sm" style={{ flex: '0 0 70%' }}
+              className="input-field !py-1.5 !text-sm" style={{ flex: '0 0 80%' }}
               suppressHydrationWarning
             />
             <button
               type="submit"
               disabled={loading || aiLoading || (!!displayedAnalysis && !typingDone) || !user1}
               className="btn-primary disabled:opacity-50 !py-1.5 !text-base font-bold"
-              style={{ flex: '0 0 30%' }}
+              style={{ flex: '0 0 20%' }}
               suppressHydrationWarning
             >
-              {loading ? 'Comparing...' : 'Start Comparison'}
+              {loading ? (
+                <span className="flex gap-1 items-center justify-center">
+                  <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:0ms]" />
+                  <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:150ms]" />
+                  <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:300ms]" />
+                </span>
+              ) : (
+                "Start"
+              )}
             </button>
           </div>
           {error && (
@@ -130,6 +139,19 @@ function CompareContent() {
             </p>
           )}
         </form>
+
+        {user1Data && user2Data && (
+          <div className="relative flex items-center mt-2 mb-6">
+            <div
+              className="flex-1 h-px"
+              style={{ background: "linear-gradient(to left, var(--color-border), transparent)" }}
+            />
+            <div
+              className="flex-1 h-px"
+              style={{ background: "linear-gradient(to right, var(--color-border), transparent)" }}
+            />
+          </div>
+        )}
 
         {user1Data && user2Data && (
           <div className="space-y-6">
@@ -268,7 +290,7 @@ function CompareContent() {
                     </p>
                   ) : aiAnalysis === '' && !aiLoading ? (
                     <p className="text-text-muted text-sm italic">
-                      AI analysis unavailable at the moment.
+                      Gemini API quota reached :(
                     </p>
                   ) : null}
                 </div>
@@ -279,8 +301,10 @@ function CompareContent() {
 
         <div className="mt-6 mb-2 text-center">
           <button
-            onClick={() => router.push(`/user/${user1}`)}
+            onClick={() => { setNavigating(true); router.push(`/user/${user1}`); }}
+            disabled={navigating}
             className="btn-dark w-32 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ cursor: navigating ? 'wait' : 'pointer' }}
             suppressHydrationWarning
           >
             Back
