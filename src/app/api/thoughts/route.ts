@@ -5,6 +5,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const username = searchParams.get('username');
   const repoName = searchParams.get('repo');
+  const profileOnly = searchParams.get('profileOnly') === 'true';
   const cursor = searchParams.get('cursor');
   const direction = searchParams.get('direction');
   const limit = 10;
@@ -22,7 +23,18 @@ export async function GET(req: NextRequest) {
     `)
     .eq('username', username);
 
-  if (repoName) query = query.eq('repo_name', repoName);
+  let countQuery = supabaseAdmin
+    .from('thoughts')
+    .select('*', { count: 'exact', head: true })
+    .eq('username', username);
+
+  if (repoName) {
+    query = query.eq('repo_name', repoName);
+    countQuery = countQuery.eq('repo_name', repoName);
+  } else if (profileOnly) {
+    query = query.is('repo_name', null);
+    countQuery = countQuery.is('repo_name', null);
+  }
 
   if (!cursor) {
     query = query.order('created_at', { ascending: false }).limit(limit);
@@ -32,10 +44,11 @@ export async function GET(req: NextRequest) {
     query = query.gt('created_at', cursor).order('created_at', { ascending: true }).limit(limit);
   }
 
-  const { data, error } = await query;
+  const [{ data, error }, { count, error: countError }] = await Promise.all([query, countQuery]);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ thoughts: data });
+  if (countError) return NextResponse.json({ error: countError.message }, { status: 500 });
+  return NextResponse.json({ thoughts: data, total: count });
 }
 
 export async function POST(req: NextRequest) {

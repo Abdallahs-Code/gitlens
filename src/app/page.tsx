@@ -14,6 +14,7 @@ export default function HomePage() {
   const [user, setUser] = useState<User | null>(null);
   const [authStatus, setAuthStatus] = useState<AuthStatus>('loading');
   const [allThoughts, setAllThoughts] = useState<Thought[]>([]);
+  const [totalThoughts, setTotalThoughts] = useState<number | null>(null);
   const [initialLoading, setInitialLoading] = useState(false);
   const [paginationLoading, setPaginationLoading] = useState(false);
   const [newestTimestamp, setNewestTimestamp] = useState<string | null>(null);
@@ -47,8 +48,9 @@ export default function HomePage() {
     if (!user) return;
     setInitialLoading(true);
     try {
-      const thoughts = await fetchThoughts(user.username);
+      const { thoughts, total } = await fetchThoughts(user.username);
       setAllThoughts(thoughts);
+      setTotalThoughts(total);
       if (thoughts.length > 0) {
         setNewestTimestamp(thoughts[0].created_at);
         setOldestTimestamp(thoughts[thoughts.length - 1].created_at);
@@ -64,10 +66,11 @@ export default function HomePage() {
     if (!user || !oldestTimestamp || paginationLoading) return;
     setPaginationLoading(true);
     try {
-      const thoughts = await fetchThoughts(user.username, oldestTimestamp, 'older');
+      const { thoughts, total } = await fetchThoughts(user.username, oldestTimestamp, 'older');
       if (thoughts.length > 0) {
         setAllThoughts(prev => [...prev, ...thoughts]);
         setOldestTimestamp(thoughts[thoughts.length - 1].created_at);
+        setTotalThoughts(total);
       }
     } catch (error) {
       console.error('Failed to load older thoughts:', error);
@@ -80,11 +83,12 @@ export default function HomePage() {
     if (!user || !newestTimestamp || paginationLoading) return;
     setPaginationLoading(true);
     try {
-      const thoughts = await fetchThoughts(user.username, newestTimestamp, 'newer');
+      const { thoughts, total } = await fetchThoughts(user.username, newestTimestamp, 'newer');
       if (thoughts.length > 0) {
-        const reversed = [...thoughts].reverse(); 
+        const reversed = [...thoughts].reverse();
         setAllThoughts(prev => [...reversed, ...prev]);
         setNewestTimestamp(reversed[0].created_at);
+        setTotalThoughts(total);
       }
     } catch (error) {
       console.error('Failed to load newer thoughts:', error);
@@ -312,7 +316,7 @@ export default function HomePage() {
                   <MessageSquare className="w-5 h-5 text-accent" />
                   <h2 className="text-xl font-semibold text-text-primary">Community Thoughts About You</h2>
                 </div>
-                <span className="text-sm text-text-muted">{allThoughts.length}</span>
+                <span className="text-sm text-text-muted">{totalThoughts}</span>
               </div>
 
               {initialLoading ? (
@@ -341,6 +345,18 @@ export default function HomePage() {
                           <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:150ms]" />
                           <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:300ms]" />
                         </span>
+                      </div>
+                    )}
+
+                    {allThoughts.length <= 2 && (
+                      <div className="flex justify-center mb-2">
+                        <button
+                          onClick={loadNewerThoughts}
+                          disabled={paginationLoading || !newestTimestamp}
+                          className="text-xs text-accent hover:text-accent disabled:opacity-30 transition-colors"
+                        >
+                          ↑ Newer
+                        </button>
                       </div>
                     )}
 
@@ -389,6 +405,18 @@ export default function HomePage() {
                         ))}
                       </div>
                     </div>
+
+                    {allThoughts.length <= 2 && (
+                      <div className="flex justify-center mt-2">
+                        <button
+                          onClick={loadOlderThoughts}
+                          disabled={paginationLoading || !oldestTimestamp}
+                          className="text-xs text-accent hover:text-accent disabled:opacity-30 transition-colors"
+                        >
+                          Older ↓
+                        </button>
+                      </div>
+                    )}
                   </div>
                 );
               })()}

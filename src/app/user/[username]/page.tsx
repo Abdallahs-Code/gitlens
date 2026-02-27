@@ -1,7 +1,7 @@
 "use client";
 
 import axios from "axios";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { GitHubProfile, GitHubRepo, Thought } from "@/lib/types";
 import { fetchUserData, fetchThoughts, addThought, formatDate, summarizeProfile } from "@/lib/api/api.client";
@@ -21,12 +21,25 @@ export default function UserProfilePage() {
   const [thoughts, setThoughts] = useState<Thought[]>([]);
   const [thoughtsLoading, setThoughtsLoading] = useState(true);
   const [thoughtsError, setThoughtsError] = useState<string | null>(null);
+  const [thoughtsPaginationLoading, setThoughtsPaginationLoading] = useState(false);
+  const [thoughtsNewestTimestamp, setThoughtsNewestTimestamp] = useState<string | null>(null);
+  const [thoughtsOldestTimestamp, setThoughtsOldestTimestamp] = useState<string | null>(null);
+  const thoughtsScrollRef = useRef<HTMLDivElement>(null);
+
+  const [repoThoughts, setRepoThoughts] = useState<{ [repoName: string]: Thought[] }>({});
+  const [repoPaginationLoading, setRepoPaginationLoading] = useState<{ [repoName: string]: boolean }>({});
+  const [repoNewestTimestamp, setRepoNewestTimestamp] = useState<{ [repoName: string]: string | null }>({});
+  const [repoOldestTimestamp, setRepoOldestTimestamp] = useState<{ [repoName: string]: string | null }>({});
+  const repoScrollRefs = useRef<{ [repoName: string]: HTMLDivElement | null }>({});
 
   const [userThoughtContent, setUserThoughtContent] = useState("");
   const [repoThoughtContents, setRepoThoughtContents] = useState<{ [repoName: string]: string }>({});
 
   const [userThoughtLoading, setUserThoughtLoading] = useState(false);
   const [repoThoughtLoading, setRepoThoughtLoading] = useState<{ [repoName: string]: boolean }>({});
+
+  const [thoughtsTotal, setThoughtsTotal] = useState<number | null>(null);
+  const [repoThoughtsTotal, setRepoThoughtsTotal] = useState<{ [repoName: string]: number | null }>({});
 
   const [displayedSummary, setDisplayedSummary] = useState<string>("");
   const [summaryExpanded, setSummaryExpanded] = useState(true);
@@ -40,11 +53,7 @@ export default function UserProfilePage() {
   const [compareLoading, setCompareLoading] = useState(false);
   const [matchLoading, setMatchLoading] = useState(false);
 
-  const [thoughtsPage, setThoughtsPage] = useState(0);
-  const [repoThoughtsPage, setRepoThoughtsPage] = useState<{ [repoName: string]: number }>({});
-
   const [navigatingUser, setNavigatingUser] = useState<string | null>(null);
-
   const [navigating, setNavigating] = useState(false);
 
   useEffect(() => {
@@ -63,8 +72,40 @@ export default function UserProfilePage() {
         setUsername(data.profile.login);
 
         try {
-          const thoughtsData = await fetchThoughts(data.profile.login);
+          const { thoughts: thoughtsData, total } = await fetchThoughts(data.profile.login, undefined, undefined, undefined, true);
           setThoughts(thoughtsData);
+          setThoughtsTotal(total);
+          if (thoughtsData.length > 0) {
+            setThoughtsNewestTimestamp(thoughtsData[0].created_at);
+            setThoughtsOldestTimestamp(thoughtsData[thoughtsData.length - 1].created_at);
+          }
+
+          const repoThoughtsResults = await Promise.all(
+            data.repos.map(async (repo) => {
+              const { thoughts: fetched, total } = await fetchThoughts(data.profile.login, undefined, undefined, repo.name);
+              return { repoName: repo.name, fetched, total };
+            })
+          );
+
+          const newRepoThoughts: { [repoName: string]: Thought[] } = {};
+          const newRepoTotals: { [repoName: string]: number | null } = {};
+          const newRepoNewest: { [repoName: string]: string | null } = {};
+          const newRepoOldest: { [repoName: string]: string | null } = {};
+
+          for (const { repoName, fetched, total } of repoThoughtsResults) {
+            newRepoThoughts[repoName] = fetched;
+            newRepoTotals[repoName] = total;
+            if (fetched.length > 0) {
+              newRepoNewest[repoName] = fetched[0].created_at;
+              newRepoOldest[repoName] = fetched[fetched.length - 1].created_at;
+            }
+          }
+
+          setRepoThoughts(newRepoThoughts);
+          setRepoThoughtsTotal(newRepoTotals);
+          setRepoNewestTimestamp(newRepoNewest);
+          setRepoOldestTimestamp(newRepoOldest);
+
         } catch (err) {
           setThoughtsError("Error loading community thoughts");
           console.error(err);
@@ -87,6 +128,102 @@ export default function UserProfilePage() {
     loadUserData();
   }, [urlUsername]);
 
+  const handleToggleRepoThoughts = (repoName: string) => {
+    setShowRepoThoughts((prev) => ({ ...prev, [repoName]: !prev[repoName] }));
+  };
+
+  const loadOlderThoughts = async () => {
+    if (!username || !thoughtsOldestTimestamp || thoughtsPaginationLoading) return;
+    setThoughtsPaginationLoading(true);
+    try {
+      const { thoughts: fetched, total } = await fetchThoughts(username, thoughtsOldestTimestamp, 'older', undefined, true);
+      if (fetched.length > 0) {
+        setThoughts((prev) => [...prev, ...fetched]);
+        setThoughtsOldestTimestamp(fetched[fetched.length - 1].created_at);
+        setThoughtsTotal(total);
+      }
+    } catch (err) {
+      console.error('Failed to load older thoughts:', err);
+    } finally {
+      setThoughtsPaginationLoading(false);
+    }
+  };
+
+  const loadNewerThoughts = async () => {
+    if (!username || !thoughtsNewestTimestamp || thoughtsPaginationLoading) return;
+    setThoughtsPaginationLoading(true);
+    try {
+      const { thoughts: fetched, total } = await fetchThoughts(username, thoughtsNewestTimestamp, 'newer', undefined, true);
+      if (fetched.length > 0) {
+        const reversed = [...fetched].reverse();
+        setThoughts((prev) => [...reversed, ...prev]);
+        setThoughtsNewestTimestamp(reversed[0].created_at);
+        setThoughtsTotal(total);
+      }
+    } catch (err) {
+      console.error('Failed to load newer thoughts:', err);
+    } finally {
+      setThoughtsPaginationLoading(false);
+    }
+  };
+
+  const handleThoughtsScroll = () => {
+    const el = thoughtsScrollRef.current;
+    if (!el || thoughtsPaginationLoading) return;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 10) {
+      loadOlderThoughts();
+    } else if (el.scrollTop === 0) {
+      loadNewerThoughts();
+    }
+  };
+
+  const loadOlderRepoThoughts = async (repoName: string) => {
+    const oldest = repoOldestTimestamp[repoName];
+    if (!username || !oldest || repoPaginationLoading[repoName]) return;
+    setRepoPaginationLoading((prev) => ({ ...prev, [repoName]: true }));
+    try {
+      const { thoughts: fetched, total } = await fetchThoughts(username, oldest, 'older', repoName);
+      if (fetched.length > 0) {
+        setRepoThoughts((prev) => ({ ...prev, [repoName]: [...(prev[repoName] ?? []), ...fetched] }));
+        setRepoOldestTimestamp((prev) => ({ ...prev, [repoName]: fetched[fetched.length - 1].created_at }));
+        setRepoThoughtsTotal((prev) => ({ ...prev, [repoName]: total }));
+      }
+    } catch (err) {
+      console.error('Failed to load older repo thoughts:', err);
+    } finally {
+      setRepoPaginationLoading((prev) => ({ ...prev, [repoName]: false }));
+    }
+  };
+
+  const loadNewerRepoThoughts = async (repoName: string) => {
+    const newest = repoNewestTimestamp[repoName];
+    if (!username || !newest || repoPaginationLoading[repoName]) return;
+    setRepoPaginationLoading((prev) => ({ ...prev, [repoName]: true }));
+    try {
+      const { thoughts: fetched, total } = await fetchThoughts(username, newest, 'newer', repoName);
+      if (fetched.length > 0) {
+        const reversed = [...fetched].reverse();
+        setRepoThoughts((prev) => ({ ...prev, [repoName]: [...reversed, ...(prev[repoName] ?? [])] }));
+        setRepoNewestTimestamp((prev) => ({ ...prev, [repoName]: reversed[0].created_at }));
+        setRepoThoughtsTotal((prev) => ({ ...prev, [repoName]: total }));
+      }
+    } catch (err) {
+      console.error('Failed to load newer repo thoughts:', err);
+    } finally {
+      setRepoPaginationLoading((prev) => ({ ...prev, [repoName]: false }));
+    }
+  };
+
+  const handleRepoThoughtsScroll = (repoName: string) => {
+    const el = repoScrollRefs.current[repoName];
+    if (!el || repoPaginationLoading[repoName]) return;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 10) {
+      loadOlderRepoThoughts(repoName);
+    } else if (el.scrollTop === 0) {
+      loadNewerRepoThoughts(repoName);
+    }
+  };
+
   const handleAddThought = async (repoName: string | null = null) => {
     const content = repoName ? repoThoughtContents[repoName] : userThoughtContent;
     if (!content?.trim()) return;
@@ -100,15 +237,24 @@ export default function UserProfilePage() {
     try {
       await addThought({ username, repo_name: repoName, content });
 
-      const updatedThoughts = await fetchThoughts(username);
-      setThoughts(updatedThoughts);
-
       if (repoName) {
+        const { thoughts: fetched, total } = await fetchThoughts(username, undefined, undefined, repoName);
+        setRepoThoughts((prev) => ({ ...prev, [repoName]: fetched }));
+        setRepoThoughtsTotal((prev) => ({ ...prev, [repoName]: total }));
+        if (fetched.length > 0) {
+          setRepoNewestTimestamp((prev) => ({ ...prev, [repoName]: fetched[0].created_at }));
+          setRepoOldestTimestamp((prev) => ({ ...prev, [repoName]: fetched[fetched.length - 1].created_at }));
+        }
         setRepoThoughtContents((prev) => ({ ...prev, [repoName]: "" }));
-        setRepoThoughtsPage((prev) => ({ ...prev, [repoName]: 0 }));
       } else {
+        const { thoughts: updatedThoughts, total } = await fetchThoughts(username, undefined, undefined, undefined, true);
+        setThoughts(updatedThoughts);
+        setThoughtsTotal(total);
+        if (updatedThoughts.length > 0) {
+          setThoughtsNewestTimestamp(updatedThoughts[0].created_at);
+          setThoughtsOldestTimestamp(updatedThoughts[updatedThoughts.length - 1].created_at);
+        }
         setUserThoughtContent("");
-        setThoughtsPage(0);
       }
     } catch (err) {
       console.error("Error adding your thought:", err);
@@ -170,38 +316,63 @@ export default function UserProfilePage() {
     router.push(`/user/${trimmed}`);
   };
 
-  const renderPaginatedThoughts = (
-    filtered: Thought[],
-    page: number,
-    setPage: (fn: (p: number) => number) => void
-  ) => {
-    const perPage = 3;
-    const sorted = [...filtered].sort(
-      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
-    const totalPages = Math.ceil(sorted.length / perPage);
-    const visible = sorted.slice(page * perPage, page * perPage + perPage);
+  const renderScrollableThoughts = (
+    thoughtList: Thought[],
+    scrollRef: React.RefObject<HTMLDivElement | null> | ((el: HTMLDivElement | null) => void),
+    onScroll: () => void,
+    paginationLoading: boolean,
+    loadNewer: () => void,
+    loadOlder: () => void,
+    newestTs: string | null,
+    oldestTs: string | null
+  ) => (
+    <div className="relative rounded-xl">
+      {paginationLoading && (
+        <div className="absolute inset-0 bg-surface/60 z-10 flex items-center justify-center rounded-xl pointer-events-none">
+          <span className="flex gap-1">
+            <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:0ms]" />
+            <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:150ms]" />
+            <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:300ms]" />
+          </span>
+        </div>
+      )}
 
-    return (
-      <div className="flex flex-col gap-3">
-        <div className="bg-surface rounded-xl flex flex-col gap-0 overflow-hidden px-4" style={{ border: '1px solid var(--color-border)' }}>
-          {visible.map((thought, index) => (
-            <div
-              key={index}
-              className={`py-3 ${index !== visible.length - 1 ? "border-b border-border" : ""}`}
-            >
+      {thoughtList.length <= 2 && (
+        <div className="flex justify-center mb-2">
+          <button
+            onClick={loadNewer}
+            disabled={paginationLoading || !newestTs}
+            className="text-xs text-accent hover:text-accent disabled:opacity-30 transition-colors"
+          >
+            ↑ Newer
+          </button>
+        </div>
+      )}
+
+      <div
+        ref={scrollRef as any}
+        onScroll={onScroll}
+        className={`bg-surface rounded-xl overflow-y-auto transition-opacity ${paginationLoading ? 'opacity-50' : 'opacity-100'}`}
+        style={{ maxHeight: '240px' }}
+      >
+        <div className="p-4 flex flex-col gap-4">
+          {thoughtList.map((thought, index) => (
+            <div key={thought.created_at} className={index !== thoughtList.length - 1 ? "pb-4 border-b border-border" : ""}>
               <div className="flex items-start gap-3">
                 <img
                   src={thought.users.avatar_url}
                   alt={thought.users.username}
-                  className="w-8 h-8 rounded-full mt-1 shrink-0"
-                  style={{ cursor: navigatingUser === thought.users.username ? 'wait' : 'pointer' }}
+                  className="w-9 h-9 rounded-full mt-1 shrink-0"
+                  style={{
+                    border: '1px solid var(--color-border)',
+                    cursor: navigatingUser === thought.users.username ? 'wait' : 'pointer'
+                  }}
                   onClick={() => handleUserNavigation(thought.users.username)}
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
                     <span
-                      className="font-medium text-text-primary text-sm hover:underline"
+                      className="font-medium text-text-primary hover:underline"
                       style={{ cursor: navigatingUser === thought.users.username ? 'wait' : 'pointer' }}
                       onClick={() => handleUserNavigation(thought.users.username)}
                     >
@@ -215,29 +386,21 @@ export default function UserProfilePage() {
             </div>
           ))}
         </div>
-
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-1">
-            <button
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-              disabled={page === 0}
-              className="text-sm text-text-muted disabled:opacity-30 hover:text-accent transition-colors cursor-pointer"
-            >
-              ← Newer
-            </button>
-            <span className="text-xs text-text-muted">{page + 1} / {totalPages}</span>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-              disabled={page === totalPages - 1}
-              className="text-sm text-text-muted disabled:opacity-30 hover:text-accent transition-colors cursor-pointer"
-            >
-              Older →
-            </button>
-          </div>
-        )}
       </div>
-    );
-  };
+
+      {thoughtList.length <= 2 && (
+        <div className="flex justify-center mt-2">
+          <button
+            onClick={loadOlder}
+            disabled={paginationLoading || !oldestTs}
+            className="text-xs text-accent hover:text-accent disabled:opacity-30 transition-colors"
+          >
+            Older ↓
+          </button>
+        </div>
+      )}
+    </div>
+  );
 
   if (isLoading) {
     return (
@@ -440,32 +603,36 @@ export default function UserProfilePage() {
               {showThoughts ? "Hide" : "Thoughts"}
             </span>
             <span className="bg-accent text-black text-xs px-2 py-0.5 rounded-full">
-              {thoughts.filter((thought) => thought.repo_name === null).length}
+              {thoughtsTotal}
             </span>
           </button>
 
           {showThoughts && (
             <div className="flex flex-col gap-3">
-              {thoughtsLoading && (
-                <div className="flex items-center gap-3 text-text-secondary text-sm">
+              {thoughtsLoading ? (
+                <div className="flex items-center justify-center py-8">
                   <span className="flex gap-1">
                     <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:0ms]" />
                     <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:150ms]" />
                     <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:300ms]" />
                   </span>
                 </div>
-              )}
-              
-              {thoughtsError && <p className="text-error">{thoughtsError}</p>}
-
-              {!thoughtsLoading && !thoughtsError && (() => {
-                const filtered = thoughts.filter((t) => t.repo_name === null);
-                return filtered.length > 0
-                  ? renderPaginatedThoughts(filtered, thoughtsPage, setThoughtsPage)
-                  : <div className="bg-surface rounded-xl py-6 flex items-center justify-center" style={{ border: '1px solid var(--color-border)' }}>
-                      <p className="text-text-muted text-sm">No thoughts yet.</p>
-                    </div>;
-              })()}
+              ) : thoughtsError ? (
+                <p className="text-error">{thoughtsError}</p>
+              ) : thoughts.length === 0 ? (
+                <div className="bg-surface rounded-xl py-6 flex items-center justify-center" style={{ border: '1px solid var(--color-border)' }}>
+                  <p className="text-text-muted text-sm">No thoughts yet.</p>
+                </div>
+              ) : renderScrollableThoughts(
+                  thoughts,
+                  thoughtsScrollRef,
+                  handleThoughtsScroll,
+                  thoughtsPaginationLoading,
+                  loadNewerThoughts,
+                  loadOlderThoughts,
+                  thoughtsNewestTimestamp,
+                  thoughtsOldestTimestamp
+                )}
 
               <form
                 onSubmit={(e) => {
@@ -533,9 +700,7 @@ export default function UserProfilePage() {
                 </div>
 
                 <button
-                  onClick={() =>
-                    setShowRepoThoughts((prev) => ({ ...prev, [repo.name]: !prev[repo.name] }))
-                  }
+                  onClick={() => handleToggleRepoThoughts(repo.name)}
                   className="btn-white w-full sm:w-auto text-sm text-center flex items-center justify-center gap-2"
                 >
                   <span className="flex items-center gap-1.5">
@@ -543,24 +708,35 @@ export default function UserProfilePage() {
                     {showRepoThoughts[repo.name] ? "Hide" : "Thoughts"}
                   </span>
                   <span className="bg-accent text-black text-xs px-2 py-0.5 rounded-full">
-                    {thoughts.filter((thought) => thought.repo_name === repo.name).length}
+                    {repoThoughtsTotal[repo.name]}
                   </span>
                 </button>
               </div>
 
               {showRepoThoughts[repo.name] && (
                 <div className="mt-3 flex flex-col gap-3">
-                  {!thoughtsLoading && (() => {
-                    const filtered = thoughts.filter((t) => t.repo_name === repo.name);
-                    const page = repoThoughtsPage[repo.name] ?? 0;
-                    const setPage = (fn: (p: number) => number) =>
-                      setRepoThoughtsPage((prev) => ({ ...prev, [repo.name]: fn(prev[repo.name] ?? 0) }));
-                    return filtered.length > 0
-                      ? renderPaginatedThoughts(filtered, page, setPage)
-                      : <div className="bg-surface rounded-xl py-6 flex items-center justify-center" style={{ border: '1px solid var(--color-border)' }}>
-                          <p className="text-text-muted text-sm">No thoughts yet.</p>
-                        </div>;
-                  })()}
+                  {repoPaginationLoading[repo.name] && !(repoThoughts[repo.name]?.length) ? (
+                    <div className="flex items-center justify-center py-8">
+                      <span className="flex gap-1">
+                        <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:0ms]" />
+                        <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:150ms]" />
+                        <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:300ms]" />
+                      </span>
+                    </div>
+                  ) : (repoThoughts[repo.name] ?? []).length === 0 ? (
+                    <div className="bg-surface rounded-xl py-6 flex items-center justify-center" style={{ border: '1px solid var(--color-border)' }}>
+                      <p className="text-text-muted text-sm">No thoughts yet.</p>
+                    </div>
+                  ) : renderScrollableThoughts(
+                      repoThoughts[repo.name],
+                      (el) => { repoScrollRefs.current[repo.name] = el; },
+                      () => handleRepoThoughtsScroll(repo.name),
+                      repoPaginationLoading[repo.name] ?? false,
+                      () => loadNewerRepoThoughts(repo.name),
+                      () => loadOlderRepoThoughts(repo.name),
+                      repoNewestTimestamp[repo.name] ?? null,
+                      repoOldestTimestamp[repo.name] ?? null
+                    )}
 
                   <form
                     onSubmit={(e) => {

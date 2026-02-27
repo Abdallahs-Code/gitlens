@@ -42,15 +42,22 @@ export const fetchUserData = async (username: string): Promise<{ profile: GitHub
 export const fetchThoughts = async (
   username: string,
   cursor?: string | null,
-  direction?: 'older' | 'newer'
-): Promise<Thought[]> => {
+  direction?: 'older' | 'newer',
+  repo?: string | null,
+  profileOnly?: boolean
+): Promise<{ thoughts: Thought[], total: number | null }> => {
   const params = new URLSearchParams({ username });
   if (cursor) params.set('cursor', cursor);
   if (direction) params.set('direction', direction);
+  if (repo) params.set('repo', repo);
+  if (profileOnly) params.set('profileOnly', 'true');
 
   const url = `${API_BASE}/api/thoughts?${params.toString()}`;
   const { data } = await axios.get(url);
-  return Array.isArray(data) ? data : data.thoughts;
+  return {
+    thoughts: Array.isArray(data) ? data : data.thoughts,
+    total: data.total ?? null
+  };
 };
 
 export const addThought = async (
