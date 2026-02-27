@@ -266,10 +266,9 @@ export default function HomePage() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 w-full flex-1">
-        <div className="flex flex-col lg:flex-row gap-6">
+        <div className="flex flex-col lg:flex-row gap-6 lg:items-stretch">
           <div className="flex flex-col gap-6 w-full lg:w-1/2">
-
-            <section className="bg-background rounded-3xl shadow-md p-6" style={{ border: '1px solid var(--color-border)' }}>
+            <section className="bg-background rounded-3xl shadow-md p-6 flex-1 flex flex-col justify-center" style={{ border: '1px solid var(--color-border)' }}>
               <div className="flex items-center gap-2 mb-4">
                 <Search className="w-5 h-5 text-accent" />
                 <h2 className="text-xl font-semibold text-text-primary">Explore GitHub Profiles</h2>
@@ -434,19 +433,19 @@ export default function HomePage() {
                 {[
                   {
                     title: "AI Profile Summarization",
-                    description: "Let AI craft a concise, human-readable summary of any GitHub profile — highlighting key contributions, activity patterns, and areas of expertise at a glance.",
+                    description: "Let AI craft a concise, human-readable summary of any GitHub profile, highlighting key contributions, activity patterns, and areas of expertise at a glance.",
                     date: "Live now",
                     badge: "AI",
                   },
                   {
                     title: "Job Match Analysis",
-                    description: "Paste a job description and let AI evaluate how well a GitHub profile matches the role — ideal for recruiters, hiring managers, or developers sizing up their own readiness.",
+                    description: "Paste a job description and let AI evaluate how well a GitHub profile matches the role, ideal for recruiters, hiring managers, or developers sizing up their own readiness.",
                     date: "Live now",
                     badge: "AI",
                   },
                   {
                     title: "Explore & Ask",
-                    description: "Navigate any GitHub repository like a file explorer, then chat with AI about any file you open — understand its purpose, decode complex logic, or see how it fits into the bigger picture of the project.",
+                    description: "Navigate any GitHub repository like a file explorer, then chat with AI about any file you open, understand its purpose, decode complex logic, or see how it fits into the bigger picture of the project.",
                     date: "Coming soon",
                     badge: "AI",
                   },
