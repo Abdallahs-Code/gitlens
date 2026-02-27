@@ -53,15 +53,28 @@ export default function UserProfilePage() {
 
       setIsLoading(true);
       setError(null);
+      setThoughtsLoading(true);
+      setThoughtsError(null);
+
       try {
         const data = await fetchUserData(urlUsername);
         setProfile(data.profile);
         setRepos(data.repos);
         setUsername(data.profile.login);
+
+        try {
+          const thoughtsData = await fetchThoughts(data.profile.login);
+          setThoughts(thoughtsData);
+        } catch (err) {
+          setThoughtsError("Error loading community thoughts");
+          console.error(err);
+        } finally {
+          setThoughtsLoading(false);
+        }
+
       } catch (err) {
         if (axios.isAxiosError(err)) {
-          const message: string =
-            err.response?.data?.error ?? "Something went wrong";
+          const message: string = err.response?.data?.error ?? "Something went wrong";
           setError(message);
         } else {
           setError("Unexpected error");
@@ -73,26 +86,6 @@ export default function UserProfilePage() {
 
     loadUserData();
   }, [urlUsername]);
-
-  useEffect(() => {
-    const loadThoughts = async () => {
-      if (!username) return;
-
-      setThoughtsLoading(true);
-      setThoughtsError(null);
-      try {
-        const data = await fetchThoughts(username);
-        setThoughts(data);
-      } catch (err) {
-        setThoughtsError("Error loading community thoughts");
-        console.error(err);
-      } finally {
-        setThoughtsLoading(false);
-      }
-    };
-
-    loadThoughts();
-  }, [username]);
 
   const handleAddThought = async (repoName: string | null = null) => {
     const content = repoName ? repoThoughtContents[repoName] : userThoughtContent;
@@ -493,7 +486,13 @@ export default function UserProfilePage() {
                   disabled={userThoughtLoading}
                   className="btn-primary w-full sm:w-auto disabled:opacity-50 !py-1.5 !text-sm"
                 >
-                  {userThoughtLoading ? "Sharing..." : "Share"}
+                  {userThoughtLoading ? (
+                    <span className="flex gap-1 items-center justify-center">
+                      <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:0ms]" />
+                      <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:150ms]" />
+                      <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:300ms]" />
+                    </span>
+                  ) : "Share"}
                 </button>
               </form>
             </div>
@@ -584,7 +583,13 @@ export default function UserProfilePage() {
                       disabled={repoThoughtLoading[repo.name]}
                       className="btn-primary w-full sm:w-auto disabled:opacity-50 !py-1.5 !text-sm"
                     >
-                      {repoThoughtLoading[repo.name] ? "Sharing..." : "Share"}
+                      {repoThoughtLoading[repo.name] ? (
+                        <span className="flex gap-1 items-center justify-center">
+                          <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:0ms]" />
+                          <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:150ms]" />
+                          <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:300ms]" />
+                        </span>
+                      ) : "Share"}
                     </button>
                   </form>
                 </div>

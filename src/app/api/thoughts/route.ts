@@ -5,6 +5,9 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const username = searchParams.get('username');
   const repoName = searchParams.get('repo');
+  const cursor = searchParams.get('cursor');
+  const direction = searchParams.get('direction');
+  const limit = 10;
 
   let query = supabaseAdmin
     .from('thoughts')
@@ -18,8 +21,16 @@ export async function GET(req: NextRequest) {
       )
     `)
     .eq('username', username);
-    
+
   if (repoName) query = query.eq('repo_name', repoName);
+
+  if (!cursor) {
+    query = query.order('created_at', { ascending: false }).limit(limit);
+  } else if (direction === 'older') {
+    query = query.lt('created_at', cursor).order('created_at', { ascending: false }).limit(limit);
+  } else {
+    query = query.gt('created_at', cursor).order('created_at', { ascending: true }).limit(limit);
+  }
 
   const { data, error } = await query;
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { User, Thought } from "@/lib/types";
 import { Unplug, MessageSquare, Search, Github, Newspaper, Sparkles } from "lucide-react";
@@ -13,11 +13,14 @@ export default function HomePage() {
   const [disconnectLoading, setDisconnectLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [authStatus, setAuthStatus] = useState<AuthStatus>('loading');
-  const [userThoughts, setUserThoughts] = useState<Thought[]>([]);
-  const [thoughtsPage, setThoughtsPage] = useState(0);
-  const [thoughtsLoading, setThoughtsLoading] = useState(false);
+  const [allThoughts, setAllThoughts] = useState<Thought[]>([]);
+  const [initialLoading, setInitialLoading] = useState(false);
+  const [paginationLoading, setPaginationLoading] = useState(false);
+  const [newestTimestamp, setNewestTimestamp] = useState<string | null>(null);
+  const [oldestTimestamp, setOldestTimestamp] = useState<string | null>(null);
   const [navigatingUser, setNavigatingUser] = useState<string | null>(null);
   const [githubLoading, setGithubLoading] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -42,15 +45,62 @@ export default function HomePage() {
 
   const loadUserThoughts = async () => {
     if (!user) return;
-    setThoughtsLoading(true);
-    setThoughtsPage(0); 
+    setInitialLoading(true);
     try {
       const thoughts = await fetchThoughts(user.username);
-      setUserThoughts(thoughts);
+      setAllThoughts(thoughts);
+      if (thoughts.length > 0) {
+        setNewestTimestamp(thoughts[0].created_at);
+        setOldestTimestamp(thoughts[thoughts.length - 1].created_at);
+      }
     } catch (error) {
       console.error('Failed to load thoughts:', error);
     } finally {
-      setThoughtsLoading(false);
+      setInitialLoading(false);
+    }
+  };
+
+  const loadOlderThoughts = async () => {
+    if (!user || !oldestTimestamp || paginationLoading) return;
+    setPaginationLoading(true);
+    try {
+      const thoughts = await fetchThoughts(user.username, oldestTimestamp, 'older');
+      if (thoughts.length > 0) {
+        setAllThoughts(prev => [...prev, ...thoughts]);
+        setOldestTimestamp(thoughts[thoughts.length - 1].created_at);
+      }
+    } catch (error) {
+      console.error('Failed to load older thoughts:', error);
+    } finally {
+      setPaginationLoading(false);
+    }
+  };
+
+  const loadNewerThoughts = async () => {
+    if (!user || !newestTimestamp || paginationLoading) return;
+    setPaginationLoading(true);
+    try {
+      const thoughts = await fetchThoughts(user.username, newestTimestamp, 'newer');
+      if (thoughts.length > 0) {
+        const reversed = [...thoughts].reverse(); 
+        setAllThoughts(prev => [...reversed, ...prev]);
+        setNewestTimestamp(reversed[0].created_at);
+      }
+    } catch (error) {
+      console.error('Failed to load newer thoughts:', error);
+    } finally {
+      setPaginationLoading(false);
+    }
+  };
+
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el || paginationLoading) return;
+
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 10) {
+      loadOlderThoughts();
+    } else if (el.scrollTop === 0) {
+      loadNewerThoughts();
     }
   };
 
@@ -262,10 +312,10 @@ export default function HomePage() {
                   <MessageSquare className="w-5 h-5 text-accent" />
                   <h2 className="text-xl font-semibold text-text-primary">Community Thoughts About You</h2>
                 </div>
-                <span className="text-sm text-text-muted">{userThoughts.length}</span>
+                <span className="text-sm text-text-muted">{allThoughts.length}</span>
               </div>
 
-              {thoughtsLoading ? (
+              {initialLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="flex items-center gap-3 text-text-secondary text-sm">
                     <span className="flex gap-1">
@@ -275,83 +325,70 @@ export default function HomePage() {
                     </span>
                   </div>
                 </div>
-              ) : userThoughts.length === 0 ? (
+              ) : allThoughts.length === 0 ? (
                 <div className="text-center py-12">
                   <MessageSquare className="w-12 h-12 text-text-muted mx-auto mb-3" />
                   <p className="text-text-secondary">No thoughts yet</p>
                   <p className="text-text-muted text-sm mt-2">When others leave thoughts on your profile, they'll appear here!</p>
                 </div>
               ) : (() => {
-                const page = thoughtsPage;
-                const perPage = 3;
-                const totalPages = Math.ceil(userThoughts.length / perPage);
-                const sorted = [...userThoughts].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-                const visible = sorted.slice(page * perPage, page * perPage + perPage);
-
                 return (
-                  <div className="flex flex-col gap-4">
-                    <div className="bg-surface rounded-xl p-4 flex flex-col gap-4" style={{ border: '1px solid var(--color-border)' }}>
-                      {visible.map((thought, index) => (
-                        <div key={index} className={index !== visible.length - 1 ? "pb-4 border-b border-border" : ""}>
-                          <div className="flex items-start gap-3">
-                            <img
-                              src={thought.users.avatar_url}
-                              alt={thought.users.username}
-                              className="w-9 h-9 rounded-full mt-1 shrink-0 cursor-pointer"
-                              style={{ 
-                                border: '1px solid var(--color-border)',
-                                cursor: navigatingUser === thought.users.username ? 'wait' : 'pointer'
-                              }}
-                              onClick={() => {
-                                handleSearch(thought.users.username);
-                              }}
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-2 mb-1">
-                                <div className="flex items-center gap-2">
-                                  <span 
-                                    className="font-medium text-text-primary cursor-pointer hover:underline"
-                                    style={{ cursor: navigatingUser === thought.users.username ? 'wait' : 'pointer' }}
-                                    onClick={() => {
-                                      handleSearch(thought.users.username);
-                                    }}
-                                  >
-                                    {thought.users.username}
-                                  </span>
-                                  {thought.repo_name && (
-                                    <span className="flex items-center gap-1 text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full">
-                                      {thought.repo_name}
-                                    </span>
-                                  )}
-                                </div>
-                                <span className="text-xs text-text-muted shrink-0">{formatDate(thought.created_at)}</span>
-                              </div>
-                              <p className="text-text-secondary text-sm">{thought.content}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {totalPages > 1 && (
-                      <div className="flex items-center justify-between">
-                        <button
-                          onClick={() => setThoughtsPage(p => Math.max(0, p - 1))}
-                          disabled={page === 0}
-                          className="text-sm text-text-muted disabled:opacity-30 hover:text-accent transition-colors cursor-pointer"                        
-                        >
-                          ← Newer
-                        </button>
-                        <span className="text-xs text-text-muted">{page + 1} / {totalPages}</span>
-                        <button
-                          onClick={() => setThoughtsPage(p => Math.min(totalPages - 1, p + 1))}
-                          disabled={page === totalPages - 1}
-                          className="text-sm text-text-muted disabled:opacity-30 hover:text-accent transition-colors cursor-pointer"                  
-                        >
-                          Older →
-                        </button>
+                  <div className="relative rounded-xl">
+                    {paginationLoading && (
+                      <div className="absolute inset-0 bg-surface/60 z-10 flex items-center justify-center rounded-xl pointer-events-none">
+                        <span className="flex gap-1">
+                          <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:0ms]" />
+                          <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:150ms]" />
+                          <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:300ms]" />
+                        </span>
                       </div>
                     )}
+
+                    <div
+                      ref={scrollRef}
+                      onScroll={handleScroll}
+                      className={`bg-surface rounded-xl overflow-y-auto transition-opacity ${paginationLoading ? 'opacity-50' : 'opacity-100'}`}
+                      style={{ maxHeight: '240px' }}
+                    >
+                      <div className="p-4 flex flex-col gap-4">
+                        {allThoughts.map((thought, index) => (
+                          <div key={thought.created_at} className={index !== allThoughts.length - 1 ? "pb-4 border-b border-border" : ""}>
+                            <div className="flex items-start gap-3">
+                              <img
+                                src={thought.users.avatar_url}
+                                alt={thought.users.username}
+                                className="w-9 h-9 rounded-full mt-1 shrink-0"
+                                style={{
+                                  border: '1px solid var(--color-border)',
+                                  cursor: navigatingUser === thought.users.username ? 'wait' : 'pointer'
+                                }}
+                                onClick={() => handleSearch(thought.users.username)}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2 mb-1">
+                                  <div className="flex items-center gap-2">
+                                    <span
+                                      className="font-medium text-text-primary hover:underline"
+                                      style={{ cursor: navigatingUser === thought.users.username ? 'wait' : 'pointer' }}
+                                      onClick={() => handleSearch(thought.users.username)}
+                                    >
+                                      {thought.users.username}
+                                    </span>
+                                    {thought.repo_name && (
+                                      <span className="flex items-center gap-1 text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full">
+                                        {thought.repo_name}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="text-xs text-text-muted shrink-0">{formatDate(thought.created_at)}</span>
+                                </div>
+                                <p className="text-text-secondary text-sm">{thought.content}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 );
               })()}
