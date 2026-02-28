@@ -215,7 +215,7 @@ export default function UserProfilePage() {
   const handleThoughtsScroll = () => {
     const el = thoughtsScrollRef.current;
     if (!el || thoughtsPaginationLoading) return;
-    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 5) {
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 1) {
       loadOlderThoughts();
     } else if (el.scrollTop === 0) {
       loadNewerThoughts();
@@ -262,7 +262,7 @@ export default function UserProfilePage() {
   const handleRepoThoughtsScroll = (repoName: string) => {
     const el = repoScrollRefs.current[repoName];
     if (!el || repoPaginationLoading[repoName]) return;
-    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 5) {
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 1) {
       loadOlderRepoThoughts(repoName);
     } else if (el.scrollTop === 0) {
       loadNewerRepoThoughts(repoName);
@@ -383,68 +383,74 @@ export default function UserProfilePage() {
         </div>
       )}
 
-      {fallback && !paginationLoading && (
-        <div className="flex justify-center mb-2">
+      <div className="flex flex-col">
+        {fallback && !paginationLoading && (
           <button
             onClick={loadNewer}
             disabled={paginationLoading || !newestTs}
-            className="text-xs text-accent hover:text-accent disabled:opacity-30 transition-colors cursor-pointer disabled:cursor-not-allowed"
+            className="w-full disabled:opacity-30 cursor-pointer"
+            style={{ lineHeight: 0, display: 'block' }}
           >
-            ↑ Newer
+            <svg viewBox="0 0 200 20" preserveAspectRatio="none" className="w-full h-4 text-accent" style={{ display: 'block' }}>
+              <polygon points="86,13.5 100,6 114,13.5" fill="currentColor" />
+              <polyline points="60,12 90,12 100,8 110,12 140,12" fill="none" stroke="currentColor" strokeWidth="2" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </button>
-        </div>
-      )}
+        )}
 
-      <div
-        ref={scrollRef as React.RefObject<HTMLDivElement>}
-        onScroll={onScroll}
-        className={`bg-surface rounded-xl overflow-y-auto transition-opacity ${paginationLoading ? 'opacity-50' : 'opacity-100'}`}
-        style={{ maxHeight: '240px' }}
-      >
-        <div className="p-3 sm:p-4 flex flex-col gap-3 sm:gap-4">
-          {thoughtList.map((thought, index) => (
-            <div key={thought.created_at} className={index !== thoughtList.length - 1 ? "pb-3 sm:pb-4 border-b border-border" : ""}>
-              <div className="flex items-start gap-3">
-                <img
-                  src={thought.users.avatar_url}
-                  alt={thought.users.username}
-                  className="w-7 h-7 sm:w-9 sm:h-9 rounded-full mt-1 shrink-0"
-                  style={{
-                    border: '1px solid var(--color-border)',
-                    cursor: navigatingUser === thought.users.username ? 'wait' : 'pointer'
-                  }}
-                  onClick={() => handleUserNavigation(thought.users.username)}
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <span
-                      className="font-medium text-text-primary hover:underline text-xs sm:text-base"
-                      style={{ cursor: navigatingUser === thought.users.username ? 'wait' : 'pointer' }}
-                      onClick={() => handleUserNavigation(thought.users.username)}
-                    >
-                      {thought.users.username}
-                    </span>
-                    <span className="text-[10px] sm:text-xs text-text-muted shrink-0">{formatDate(thought.created_at)}</span>
+        <div
+          ref={scrollRef as React.RefObject<HTMLDivElement>}
+          onScroll={onScroll}
+          className={`bg-surface rounded-xl overflow-y-auto transition-opacity ${paginationLoading ? 'opacity-50' : 'opacity-100'}`}
+          style={{ maxHeight: '240px' }}
+        >
+          <div className="p-3 sm:p-4 flex flex-col gap-3 sm:gap-4">
+            {thoughtList.map((thought, index) => (
+              <div key={thought.created_at} className={index !== thoughtList.length - 1 ? "pb-3 sm:pb-4 border-b border-border" : ""}>
+                <div className="flex items-start gap-3">
+                  <img
+                    src={thought.users.avatar_url}
+                    alt={thought.users.username}
+                    className="w-7 h-7 sm:w-9 sm:h-9 rounded-full mt-1 shrink-0"
+                    style={{
+                      border: '1px solid var(--color-border)',
+                      cursor: navigatingUser === thought.users.username ? 'wait' : 'pointer'
+                    }}
+                    onClick={() => handleUserNavigation(thought.users.username)}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <span
+                        className="font-medium text-text-primary hover:underline text-xs sm:text-base"
+                        style={{ cursor: navigatingUser === thought.users.username ? 'wait' : 'pointer' }}
+                        onClick={() => handleUserNavigation(thought.users.username)}
+                      >
+                        {thought.users.username}
+                      </span>
+                      <span className="text-[10px] sm:text-xs text-text-muted shrink-0">{formatDate(thought.created_at)}</span>
+                    </div>
+                    <p className="text-text-secondary text-xs sm:text-sm">{thought.content}</p>
                   </div>
-                  <p className="text-text-secondary text-xs sm:text-sm">{thought.content}</p>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
 
-      {fallback && !paginationLoading && (
-        <div className="flex justify-center mt-2">
+        {fallback && !paginationLoading && (
           <button
             onClick={loadOlder}
             disabled={paginationLoading || !oldestTs}
-            className="text-xs text-accent hover:text-accent disabled:opacity-30 transition-colors cursor-pointer disabled:cursor-not-allowed"
+            className="w-full disabled:opacity-30 cursor-pointer"
+            style={{ lineHeight: 0, display: 'block' }}
           >
-            Older ↓
+            <svg viewBox="0 0 200 20" preserveAspectRatio="none" className="w-full h-4 text-accent" style={{ display: 'block' }}>
+              <polygon points="86,6.5 100,14 114,6.5" fill="currentColor" />
+              <polyline points="60,8 90,8 100,12 110,8 140,8" fill="none" stroke="currentColor" strokeWidth="2" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 

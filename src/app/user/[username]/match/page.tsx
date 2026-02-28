@@ -95,7 +95,7 @@ export default function MatchPage() {
           <h1 className="text-2xl font-bold text-text-primary text-center sm:text-left">
             Job Match Analysis
           </h1>
-          <p className="text-text-secondary mt-2">
+          <p className="text-text-secondary mt-2 text-center sm:text-left">
             Analyzing GitHub profile: <span className="text-accent">{username}</span>
           </p>
         </div>

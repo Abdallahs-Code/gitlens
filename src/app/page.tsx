@@ -112,7 +112,7 @@ export default function HomePage() {
     const el = scrollRef.current;
     if (!el || paginationLoading) return;
 
-    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 5) {
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 1) {
       loadOlderThoughts();
     } else if (el.scrollTop === 0) {
       loadNewerThoughts();
@@ -354,81 +354,81 @@ export default function HomePage() {
                       </div>
                     )}
 
-                    {needsFallback && !paginationLoading && (
-                      <button
-                        onClick={loadNewerThoughts}
-                        disabled={paginationLoading || !newestTimestamp}
-                        className="w-full disabled:opacity-30 group"
-                      >
-                        <svg viewBox="0 0 200 20" preserveAspectRatio="none" className="w-full h-4 text-accent" style={{ overflow: 'visible', display: 'block' }}>
-                          <polyline
-                            points="60,12 90,12 100,4 110,12 140,12"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            vectorEffect="non-scaling-stroke"
-                          />
-                        </svg>
-                      </button>
-                    )}
+                    <div className="flex flex-col">
+                      {needsFallback && !paginationLoading && (
+                        <button
+                          onClick={loadNewerThoughts}
+                          disabled={paginationLoading || !newestTimestamp}
+                          className="w-full disabled:opacity-30 cursor-pointer"
+                          style={{ lineHeight: 0, display: 'block' }}
+                        >
+                          <svg viewBox="0 0 200 20" preserveAspectRatio="none" className="w-full h-4 text-accent" style={{ display: 'block' }}>
+                            <polygon points="86,13.5 100,6 114,13.5" fill="currentColor" />
+                            <polyline points="60,12 90,12 100,8 110,12 140,12" fill="none" stroke="currentColor" strokeWidth="2" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </button> 
+                      )}
 
-                    <div
-                      ref={scrollRef}
-                      onScroll={handleScroll}
-                      className={`bg-surface rounded-xl overflow-y-auto transition-opacity ${paginationLoading ? 'opacity-50' : 'opacity-100'}`}
-                      style={{ maxHeight: '240px' }}
-                    >
-                      <div className="p-3 sm:p-4 flex flex-col gap-3 sm:gap-4">
-                        {allThoughts.map((thought, index) => (
-                          <div key={thought.created_at} className={index !== allThoughts.length - 1 ? "pb-3 sm:pb-4 border-b border-border" : ""}>
-                            <div className="flex items-start gap-3">
-                              <img
-                                src={thought.users.avatar_url}
-                                alt={thought.users.username}
-                                className="w-7 h-7 sm:w-9 sm:h-9 rounded-full mt-1 shrink-0"
-                                style={{
-                                  border: '1px solid var(--color-border)',
-                                  cursor: navigatingUser === thought.users.username ? 'wait' : 'pointer'
-                                }}
-                                onClick={() => handleSearch(thought.users.username)}
-                              />
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between gap-2 mb-1">
-                                  <div className="flex items-center gap-1 sm:gap-2">
-                                    <span
-                                      className="font-medium text-text-primary hover:underline text-xs sm:text-base"
-                                      style={{ cursor: navigatingUser === thought.users.username ? 'wait' : 'pointer' }}
-                                      onClick={() => handleSearch(thought.users.username)}
-                                    >
-                                      {thought.users.username}
-                                    </span>
-                                    {thought.repo_name && (
-                                      <span className="flex items-center gap-1 text-[10px] sm:text-sm bg-accent/10 text-accent px-1.5 sm:px-2 py-0.5 rounded-full">
-                                        {thought.repo_name}
+                      <div
+                        ref={scrollRef}
+                        onScroll={handleScroll}
+                        className={`bg-surface rounded-xl overflow-y-auto transition-opacity ${paginationLoading ? 'opacity-50' : 'opacity-100'}`}
+                        style={{ maxHeight: '240px' }}
+                      >
+                        <div className="p-3 sm:p-4 flex flex-col gap-3 sm:gap-4">
+                          {allThoughts.map((thought, index) => (
+                            <div key={thought.created_at} className={index !== allThoughts.length - 1 ? "pb-3 sm:pb-4 border-b border-border" : ""}>
+                              <div className="flex items-start gap-3">
+                                <img
+                                  src={thought.users.avatar_url}
+                                  alt={thought.users.username}
+                                  className="w-7 h-7 sm:w-9 sm:h-9 rounded-full mt-1 shrink-0"
+                                  style={{
+                                    border: '1px solid var(--color-border)',
+                                    cursor: navigatingUser === thought.users.username ? 'wait' : 'pointer'
+                                  }}
+                                  onClick={() => handleSearch(thought.users.username)}
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between gap-2 mb-1">
+                                    <div className="flex items-center gap-1 sm:gap-2">
+                                      <span
+                                        className="font-medium text-text-primary hover:underline text-xs sm:text-base"
+                                        style={{ cursor: navigatingUser === thought.users.username ? 'wait' : 'pointer' }}
+                                        onClick={() => handleSearch(thought.users.username)}
+                                      >
+                                        {thought.users.username}
                                       </span>
-                                    )}
+                                      {thought.repo_name && (
+                                        <span className="flex items-center gap-1 text-[10px] sm:text-sm bg-accent/10 text-accent px-1.5 sm:px-2 py-0.5 rounded-full">
+                                          {thought.repo_name}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <span className="text-[10px] sm:text-xs text-text-muted shrink-0">{formatDate(thought.created_at)}</span>
                                   </div>
-                                  <span className="text-[10px] sm:text-xs text-text-muted shrink-0">{formatDate(thought.created_at)}</span>
+                                  <p className="text-text-secondary text-xs sm:text-sm">{thought.content}</p>
                                 </div>
-                                <p className="text-text-secondary text-xs sm:text-sm">{thought.content}</p>
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
 
-                    {needsFallback && !paginationLoading && (
-                      <div className="flex justify-center mt-2">
+                      {needsFallback && !paginationLoading && (
                         <button
                           onClick={loadOlderThoughts}
                           disabled={paginationLoading || !oldestTimestamp}
-                          className="text-xs text-accent hover:text-accent disabled:opacity-30 transition-colors cursor-pointer disabled:cursor-not-allowed"
+                          className="w-full disabled:opacity-30 cursor-pointer"
+                          style={{ lineHeight: 0, display: 'block' }}
                         >
-                          Older ↓
+                          <svg viewBox="0 0 200 20" preserveAspectRatio="none" className="w-full h-4 text-accent" style={{ display: 'block' }}>
+                            <polygon points="86,6.5 100,14 114,6.5" fill="currentColor" />
+                            <polyline points="60,8 90,8 100,12 110,8 140,8" fill="none" stroke="currentColor" strokeWidth="2" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
                         </button>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 );
               })()}
