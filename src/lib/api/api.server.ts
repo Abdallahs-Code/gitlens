@@ -1,7 +1,7 @@
 import 'server-only';
 import { jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
-import { supabaseAdmin } from '@/lib/services/supabase';
+import { supabase } from '@/lib/services/supabase';
 import { decryptToken } from '@/lib/auth';
 
 export class GitHubTokenExpiredError extends Error {}
@@ -17,7 +17,7 @@ async function getGitHubToken(): Promise<string | null> {
     const { payload } = await jwtVerify(token, secret);
     const user_id = payload.user_id as number;
 
-    const { data: user, error } = await supabaseAdmin
+    const { data: user, error } = await supabase
       .from('users')
       .select('github_token_encrypted')
       .eq('id', user_id)

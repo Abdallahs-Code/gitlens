@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/services/supabase';
+import { supabase } from '@/lib/services/supabase';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   const direction = searchParams.get('direction');
   const limit = 10;
 
-  let query = supabaseAdmin
+  let query = supabase
     .from('thoughts')
     .select(`
       content,
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     `)
     .eq('username', username);
 
-  let countQuery = supabaseAdmin
+  let countQuery = supabase
     .from('thoughts')
     .select('*', { count: 'exact', head: true })
     .eq('username', username);
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { username, repo_name, content } = body;
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from("thoughts")
       .insert([{ 
         username, 

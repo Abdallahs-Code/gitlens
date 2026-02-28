@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
-import { supabaseAdmin } from '@/lib/services/supabase';
+import { supabase } from '@/lib/services/supabase';
 import { decryptToken } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const { data: user } = await supabaseAdmin
+    const { data: user } = await supabase
       .from('users')
       .select('github_token_encrypted')
       .eq('id', user_id)
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify({ access_token: githubToken }),
       });
 
-      await supabaseAdmin
+      await supabase
         .from('users')
         .update({ github_token_encrypted: null })
         .eq('id', user_id);

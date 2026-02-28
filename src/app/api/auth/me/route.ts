@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
-import { supabaseAdmin } from '@/lib/services/supabase';
+import { supabase } from '@/lib/services/supabase';
 
 export async function GET(request: NextRequest) {
   const token = request.cookies.get('session_token')?.value;
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const { payload } = await jwtVerify(token, secret);
     const user_id = payload.user_id as number;
 
-    const { data: user, error } = await supabaseAdmin
+    const { data: user, error } = await supabase
       .from('users')
       .select('id, username, email, avatar_url, bio')
       .eq('id', user_id)

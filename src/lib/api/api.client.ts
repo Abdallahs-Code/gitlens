@@ -8,7 +8,7 @@ import {
   MatchResult
 } from "@/lib/types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://gitlens-snowy.vercel.app";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
 export const githubFlow = () => {
   window.location.href = `${API_BASE}/api/auth/github`;

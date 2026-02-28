@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SignJWT } from 'jose';
 import { getRedisClient } from '@/lib/services/redis';
-import { supabaseAdmin } from '@/lib/services/supabase';
+import { supabase } from '@/lib/services/supabase';
 import { encryptToken, decryptToken } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
     });
     const githubUser = await userResponse.json();
 
-    const { data: existingUser } = await supabaseAdmin
+    const { data: existingUser } = await supabase
       .from('users')
       .select('github_token_encrypted')
       .eq('github_id', githubUser.id)
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
 
     const encryptedToken = encryptToken(accessToken);
 
-    const { data: user, error } = await supabaseAdmin
+    const { data: user, error } = await supabase
       .from('users')
       .upsert(
         {
