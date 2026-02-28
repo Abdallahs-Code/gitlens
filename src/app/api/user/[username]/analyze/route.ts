@@ -156,7 +156,7 @@ async function fetchAllRepos(username: string) {
   return allRepos;
 }
 
-export async function analyzeProfile(username: string) {
+async function analyzeProfile(username: string) {
   const userResponse = await githubFetch(
     `https://api.github.com/users/${username}`
   );
