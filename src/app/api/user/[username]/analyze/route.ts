@@ -131,7 +131,7 @@ async function analyzeRepo(repoFullName: string) {
 async function fetchAllRepos(username: string) {
   const perPage = 100;
   let page = 1;
-  let allRepos: Array<{ full_name: string }> = [];
+  const allRepos: Array<{ full_name: string }> = [];
 
   while (true) {
     const response = await githubFetch(
@@ -241,7 +241,7 @@ export async function analyzeProfile(username: string) {
       .sort((a, b) => b[1] - a[1])
       .map(([name]) => name);
 
-  const result: Record<string, any> = { username: username };
+  const result: Record<string, unknown> = { username: username };
 
   if (finalSeniority !== 'Unknown') result.seniority = finalSeniority;
   if (roles.length) result.roles = roles;
@@ -283,13 +283,14 @@ export async function POST(
       { success: true, data: result },
       { status: 200 }
     );
-  } catch (error: any) {
+  } catch (error) {
     if (error instanceof GitHubTokenExpiredError) {
       return NextResponse.json({ error: 'GitHub token expired' }, { status: 401 });
     }
-    console.error('Error analyzing GitHub profile:', error);
+    const err = error as Error;
+    console.error('Error analyzing GitHub profile:', err);
     return NextResponse.json(
-      { success: false, error: error.message || 'Internal Server Error' },
+      { success: false, error: err.message || 'Internal Server Error' },
       { status: 500 }
     );
   }

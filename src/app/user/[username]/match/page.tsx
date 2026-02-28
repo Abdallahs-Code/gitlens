@@ -75,8 +75,9 @@ export default function MatchPage() {
           setTypingDone(true);
         }
       }, 18);
-    } catch (err: any) {
-      setError(err.message === "llm" ? "llm" : "gemini");
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message === "llm" ? "llm" : "gemini");
     } finally {
       setLoading(false);
     }

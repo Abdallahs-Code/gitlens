@@ -67,10 +67,11 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ success: true, data: job_summary }, { status: 200 });
-  } catch (error: any) {
-    console.error('Error processing job description:', error);
+  } catch (error) {
+    const err = error as Error;
+    console.error('Error processing job description:', err);
     return NextResponse.json(
-      { success: false, error: error.message || 'Internal Server Error' },
+      { success: false, error: err.message || 'Internal Server Error' },
       { status: 500 }
     );
   }

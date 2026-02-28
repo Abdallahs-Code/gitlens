@@ -350,7 +350,7 @@ export default function UserProfilePage() {
       )}
 
       <div
-        ref={scrollRef as any}
+        ref={scrollRef as React.RefObject<HTMLDivElement>}
         onScroll={onScroll}
         className={`bg-surface rounded-xl overflow-y-auto transition-opacity ${paginationLoading ? 'opacity-50' : 'opacity-100'}`}
         style={{ maxHeight: '240px' }}

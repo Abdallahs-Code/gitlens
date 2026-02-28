@@ -38,7 +38,7 @@ export default function HomePage() {
       const data = await getCurrentUser();
       setUser(data.user);
       setAuthStatus(data.status);
-    } catch (error: any) {
+    } catch {
       setAuthStatus('unauthenticated');
     }
   };
@@ -321,7 +321,7 @@ export default function HomePage() {
                 <div className="text-center py-12">
                   <MessageSquare className="w-12 h-12 text-text-muted mx-auto mb-3" />
                   <p className="text-text-secondary">No thoughts yet</p>
-                  <p className="text-text-muted text-sm mt-2">When others leave thoughts on your profile, they'll appear here!</p>
+                  <p className="text-text-muted text-sm mt-2">When others leave thoughts on your profile, they&apos;ll appear here!</p>
                 </div>
               ) : (() => {
                 return (
@@ -415,7 +415,7 @@ export default function HomePage() {
             <section className="bg-background rounded-3xl shadow-md p-6 h-full" style={{ border: '1px solid var(--color-border)' }}>
               <div className="flex items-center gap-2 mb-6">
                 <Newspaper className="w-5 h-5 text-accent" />
-                <h2 className="text-xl font-semibold text-text-primary">What's New</h2>
+                <h2 className="text-xl font-semibold text-text-primary">What&apos;s New</h2>
               </div>
 
               <div className="space-y-4">

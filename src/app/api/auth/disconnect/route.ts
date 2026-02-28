@@ -17,8 +17,9 @@ export async function POST(request: NextRequest) {
       const secret = new TextEncoder().encode(process.env.JWT_SECRET);
       const { payload } = await jwtVerify(token, secret);
       user_id = payload.user_id as number;
-    } catch (error: any) {
-      if (error?.code === 'ERR_JWT_EXPIRED') {
+    } catch (error) {
+      const err = error as { code?: string };
+      if (err?.code === 'ERR_JWT_EXPIRED') {
         const response = NextResponse.json({ message: 'Session expired, disconnected' });
         return response;
       }

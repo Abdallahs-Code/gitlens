@@ -23,7 +23,7 @@ export async function GET(
       ]);
 
       const profile = await profileRes.json();
-      const repos: any[] = await reposRes.json();
+      const repos: GitHubRepo[] = await reposRes.json();
 
       const filteredProfile: GitHubProfile = {
         login: profile.login,

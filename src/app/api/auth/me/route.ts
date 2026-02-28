@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
       },
     });
 
-  } catch (error: any) {
+  } catch {
     return NextResponse.json({ status: 'unauthenticated' }, { status: 401 });
   }
 }
