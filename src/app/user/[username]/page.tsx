@@ -170,7 +170,7 @@ export default function UserProfilePage() {
   const handleThoughtsScroll = () => {
     const el = thoughtsScrollRef.current;
     if (!el || thoughtsPaginationLoading) return;
-    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 10) {
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight) {
       loadOlderThoughts();
     } else if (el.scrollTop === 0) {
       loadNewerThoughts();
@@ -217,7 +217,7 @@ export default function UserProfilePage() {
   const handleRepoThoughtsScroll = (repoName: string) => {
     const el = repoScrollRefs.current[repoName];
     if (!el || repoPaginationLoading[repoName]) return;
-    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 10) {
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight) {
       loadOlderRepoThoughts(repoName);
     } else if (el.scrollTop === 0) {
       loadNewerRepoThoughts(repoName);
@@ -337,12 +337,12 @@ export default function UserProfilePage() {
         </div>
       )}
 
-      {thoughtList.length <= 2 && (
+      {thoughtList.length <= 2 && !paginationLoading && (
         <div className="flex justify-center mb-2">
           <button
             onClick={loadNewer}
             disabled={paginationLoading || !newestTs}
-            className="text-xs text-accent hover:text-accent disabled:opacity-30 transition-colors"
+            className="text-xs text-accent hover:text-accent disabled:opacity-30 transition-colors cursor-pointer disabled:cursor-not-allowed"
           >
             ↑ Newer
           </button>
@@ -388,12 +388,12 @@ export default function UserProfilePage() {
         </div>
       </div>
 
-      {thoughtList.length <= 2 && (
+      {thoughtList.length <= 2 && !paginationLoading && (
         <div className="flex justify-center mt-2">
           <button
             onClick={loadOlder}
             disabled={paginationLoading || !oldestTs}
-            className="text-xs text-accent hover:text-accent disabled:opacity-30 transition-colors"
+            className="text-xs text-accent hover:text-accent disabled:opacity-30 transition-colors cursor-pointer disabled:cursor-not-allowed"
           >
             Older ↓
           </button>
@@ -475,7 +475,7 @@ export default function UserProfilePage() {
 
   return (
     <div className="flex flex-col min-h-screen overflow-x-hidden bg-surface">
-      <main className="mt-4 p-4 sm:p-6 max-w-full sm:max-w-4xl mx-auto bg-background shadow-md rounded-3xl mb-6 px-4 sm:px-6"
+      <main className="mt-4 p-4 sm:p-6 pt-6 max-w-full sm:max-w-4xl mx-auto bg-background shadow-md rounded-3xl mb-6 px-4 sm:px-6"
         style={{ border: '1px solid var(--color-border)' }}>
         <div className="flex flex-col sm:flex-row items-center sm:space-x-4 mb-6 space-y-4 sm:space-y-0">
           <img
@@ -495,14 +495,14 @@ export default function UserProfilePage() {
               <span>Repos: {profile.public_repos}</span>
             </div>
           </div>
-          <div className="flex flex-wrap gap-4 justify-end px-4 sm:px-0 sm:ml-12">
+          <div className="flex flex-nowrap gap-1.5 sm:gap-4 justify-end px-2 sm:px-0 sm:ml-12">
             <button
               onClick={handleSummarize}
-              disabled={summaryLoading || (displayedSummary !== "" && !typingDone)}
-              className="btn-primary flex-1 sm:flex-none sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-2"
-            >
+              disabled={summaryLoading || !typingDone && displayedSummary !== ""}
+              className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-1.5 sm:gap-2 !px-3 sm:!px-6 !text-sm sm:!text-base"
+              >
               <Scissors className="w-4 h-4" />
-              {summaryLoading ? (
+              {(summaryLoading || (displayedSummary !== "" && !typingDone)) ? (
                 <span className="flex gap-1 items-center justify-center">
                   <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:0ms]" />
                   <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:150ms]" />
@@ -515,7 +515,7 @@ export default function UserProfilePage() {
             <button
               onClick={handleCompare}
               disabled={compareLoading}
-              className="btn-primary flex-1 sm:flex-none sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-2"
+              className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-1.5 sm:gap-2 !px-3 sm:!px-6 !text-sm sm:!text-base"
             >
               <GitCompare className="w-4 h-4" />
               {compareLoading ? (
@@ -531,7 +531,7 @@ export default function UserProfilePage() {
             <button
               onClick={handleMatch}
               disabled={matchLoading}
-              className="btn-primary flex-1 sm:flex-none sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-2"
+              className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-1.5 sm:gap-2 !px-3 sm:!px-6 !text-sm sm:!text-base"
             >
               <Briefcase className="w-4 h-4" />
               {matchLoading ? (
@@ -594,18 +594,20 @@ export default function UserProfilePage() {
         )}
 
         <section className="mt-8">
-          <button
-            onClick={() => setShowThoughts((prev) => !prev)}
-            className="btn-white w-full sm:w-auto text-sm text-center mb-3 flex items-center justify-center gap-2"
-          >
-            <span className="flex items-center gap-1.5">
-              <MessageSquare className="w-3.5 h-3.5 text-black fill-current" />
-              {showThoughts ? "Hide" : "Thoughts"}
-            </span>
-            <span className="bg-accent text-black text-xs px-2 py-0.5 rounded-full">
-              {thoughtsTotal}
-            </span>
-          </button>
+          <div className="flex justify-center sm:justify-start">
+            <button
+              onClick={() => setShowThoughts((prev) => !prev)}
+              className="btn-white text-sm text-center mb-3 flex items-center justify-center gap-2"
+            >
+              <span className="flex items-center gap-1.5">
+                <MessageSquare className="w-3.5 h-3.5 text-black fill-current" />
+                {showThoughts ? "Hide" : "Thoughts"}
+              </span>
+              <span className="bg-accent text-black text-xs px-2 py-0.5 rounded-full">
+                {thoughtsTotal}
+              </span>
+            </button>
+          </div>
 
           {showThoughts && (
             <div className="flex flex-col gap-3">
@@ -639,19 +641,19 @@ export default function UserProfilePage() {
                   e.preventDefault();
                   handleAddThought(null);
                 }}
-                className="mt-1 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2"
+                className="mt-1 flex flex-row space-x-2"
               >
                 <input
                   type="text"
                   value={userThoughtContent}
                   onChange={(e) => setUserThoughtContent(e.target.value)}
                   placeholder="Add something..."
-                  className="input-field w-full sm:w-auto !py-1.5 !text-sm"
+                  className="input-field flex-1 !py-1.5 !text-sm"
                 />
                 <button
                   type="submit"
                   disabled={userThoughtLoading}
-                  className="btn-primary w-full sm:w-auto disabled:opacity-50 !py-1.5 !text-sm"
+                  className="btn-primary disabled:opacity-50 !py-1.5 !text-sm"
                 >
                   {userThoughtLoading ? (
                     <span className="flex gap-1 items-center justify-center">
@@ -684,13 +686,13 @@ export default function UserProfilePage() {
                 </span>
               </div>
               <p className="text-text-secondary mt-1 break-words">{repo.description}</p>
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mt-2 gap-2 sm:gap-0">
+              <div className="flex flex-row justify-between items-center mt-2 w-full">
                 <div className="flex flex-wrap gap-4 text-sm text-text-muted">
                   <span className="flex items-center gap-1">
                     <Star className="w-3.5 h-3.5" /> {repo.stargazers_count}
                   </span>
                   <span className="flex items-center gap-1">
-                    <GitFork className="w-3.5 h-3.5" /> {repo.forks_count}
+                    <GitFork className="w-3.5 h-3.5" /> {repo.forks_count} 
                   </span>
                   {repo.language && (
                     <span className="flex items-center gap-1">
@@ -701,11 +703,11 @@ export default function UserProfilePage() {
 
                 <button
                   onClick={() => handleToggleRepoThoughts(repo.name)}
-                  className="btn-white w-full sm:w-auto text-sm text-center flex items-center justify-center gap-2"
+                  className="btn-white text-sm text-center flex items-center justify-center gap-2"
                 >
                   <span className="flex items-center gap-1.5">
                     <MessageSquare className="w-3.5 h-3.5 text-black fill-current" />
-                    {showRepoThoughts[repo.name] ? "Hide" : "Thoughts"}
+                    {showRepoThoughts[repo.name] ? "Hide" : <span className="hidden sm:inline">Thoughts</span>}
                   </span>
                   <span className="bg-accent text-black text-xs px-2 py-0.5 rounded-full">
                     {repoThoughtsTotal[repo.name]}
@@ -743,7 +745,7 @@ export default function UserProfilePage() {
                       e.preventDefault();
                       handleAddThought(repo.name);
                     }}
-                    className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2"
+                    className="flex flex-row space-x-2"
                   >
                     <input
                       type="text"
@@ -752,12 +754,12 @@ export default function UserProfilePage() {
                         setRepoThoughtContents((prev) => ({ ...prev, [repo.name]: e.target.value }))
                       }
                       placeholder="Add something..."
-                      className="input-field w-full sm:w-auto !py-1.5 !text-sm"
+                      className="input-field flex-1 !py-1.5 !text-sm"
                     />
                     <button
                       type="submit"
                       disabled={repoThoughtLoading[repo.name]}
-                      className="btn-primary w-full sm:w-auto disabled:opacity-50 !py-1.5 !text-sm"
+                      className="btn-primary disabled:opacity-50 !py-1.5 !text-sm"
                     >
                       {repoThoughtLoading[repo.name] ? (
                         <span className="flex gap-1 items-center justify-center">

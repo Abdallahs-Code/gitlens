@@ -91,7 +91,7 @@ function CompareContent() {
 
   return (
     <div className="flex flex-col min-h-screen w-full bg-surface">
-      <main className="mt-6 p-6 w-[60%] mx-auto bg-background shadow-md rounded-3xl mb-8" style={{ border: '1px solid var(--color-border)' }}>
+      <main className="mt-6 p-6 w-full sm:w-[60%] mx-auto bg-background shadow-md rounded-3xl mb-8" style={{ border: '1px solid var(--color-border)' }}>
         <h1 className="text-2xl font-bold text-text-primary text-center mb-2">
           GitHub Profile Comparison
         </h1>
@@ -111,14 +111,13 @@ function CompareContent() {
               value={user2Input}
               onChange={(e) => setUser2Input(e.target.value)}
               placeholder="GitHub username"
-              className="input-field !py-1.5 !text-sm" style={{ flex: '0 0 80%' }}
+              className="input-field flex-1 !py-1.5 !text-sm"
               suppressHydrationWarning
             />
             <button
               type="submit"
               disabled={loading || aiLoading || (!!displayedAnalysis && !typingDone) || !user1}
-              className="btn-primary disabled:opacity-50 !py-1.5 !text-base font-bold"
-              style={{ flex: '0 0 20%' }}
+              className="btn-primary disabled:opacity-50 !py-1.5 !text-base font-bold whitespace-nowrap"
               suppressHydrationWarning
             >
               {loading ? (
@@ -156,7 +155,7 @@ function CompareContent() {
         {user1Data && user2Data && (
           <div className="space-y-6">
             <div className="flex items-center mb-4">
-              <div className="flex-1 text-center pl-4">
+              <div className="flex-1 text-center">
                 <img
                   src={user1Data.avatar_url}
                   alt={user1Data.login}
@@ -177,14 +176,11 @@ function CompareContent() {
                 {user1Data.bio && <p className="text-text-secondary mt-1 text-sm">{user1Data.bio}</p>}
               </div>
 
-              <div
-                className="flex items-center justify-center text-2xl font-bold text-text-muted flex-shrink-0"
-                style={{ width: '7rem' }}
-              >
+              <div className="flex items-center justify-center text-2xl font-bold text-text-muted flex-shrink-0 w-12 sm:w-28">
                 VS
               </div>
 
-              <div className="flex-1 text-center pr-4">
+              <div className="flex-1 text-center">
                 <img
                   src={user2Data.avatar_url}
                   alt={user2Data.login}

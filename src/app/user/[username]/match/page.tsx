@@ -87,7 +87,7 @@ export default function MatchPage() {
   return (
     <div className="flex flex-col min-h-screen overflow-x-hidden bg-surface">
       <main
-        className="mt-4 p-4 sm:p-6 w-[60%] mx-auto bg-background shadow-md rounded-3xl mb-6 px-4 sm:px-6"
+        className="mt-4 p-4 sm:p-6 w-full sm:w-[60%] mx-auto bg-background shadow-md rounded-3xl mb-6 px-4 sm:px-6"
         style={{ border: "1px solid var(--color-border)" }}
       >
         <div className="mb-6">
@@ -150,7 +150,7 @@ export default function MatchPage() {
           </div>
         )}
 
-        <div className="flex flex-col sm:flex-row gap-3 mb-6 justify-center">
+        <div className="flex flex-row gap-3 mb-6 justify-center">
           <button
             onClick={handleAnalyzeMatch}
             disabled={loading || (!!displayedTakeaway && !typingDone)}
@@ -195,20 +195,16 @@ export default function MatchPage() {
 
         {matchResult && verdictStyle && (
           <section className="space-y-4">
-            <div className="flex flex-col gap-2">
-              <span className="text-sm tracking-widest text-text-primary font-semibold">
-                Verdict
-              </span>
-
+            <div className="flex justify-center sm:justify-start mt-4">
               <div
-                className="inline-flex items-center px-5 py-3 rounded-2xl self-start"
+                className="inline-flex items-center px-3 py-2 rounded-2xl"
                 style={{
                   background: verdictStyle.bg,
                   border: `1px solid ${verdictStyle.color}22`,
                 }}
               >
                 <span
-                  className="text-2xl font-bold tracking-tight"
+                  className="text-xl font-bold tracking-tight"
                   style={{ color: verdictStyle.color }}
                 >
                   {matchResult.verdict} Candidate

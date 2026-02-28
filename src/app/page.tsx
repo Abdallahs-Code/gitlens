@@ -15,7 +15,6 @@ export default function HomePage() {
   const [authStatus, setAuthStatus] = useState<AuthStatus>('loading');
   const [allThoughts, setAllThoughts] = useState<Thought[]>([]);
   const [totalThoughts, setTotalThoughts] = useState<number | null>(null);
-  const [initialLoading, setInitialLoading] = useState(false);
   const [paginationLoading, setPaginationLoading] = useState(false);
   const [newestTimestamp, setNewestTimestamp] = useState<string | null>(null);
   const [oldestTimestamp, setOldestTimestamp] = useState<string | null>(null);
@@ -46,7 +45,7 @@ export default function HomePage() {
 
   const loadUserThoughts = async () => {
     if (!user) return;
-    setInitialLoading(true);
+    setPaginationLoading(true);
     try {
       const { thoughts, total } = await fetchThoughts(user.username);
       setAllThoughts(thoughts);
@@ -58,7 +57,7 @@ export default function HomePage() {
     } catch (error) {
       console.error('Failed to load thoughts:', error);
     } finally {
-      setInitialLoading(false);
+      setPaginationLoading(false);
     }
   };
 
@@ -101,7 +100,7 @@ export default function HomePage() {
     const el = scrollRef.current;
     if (!el || paginationLoading) return;
 
-    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 10) {
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight) {
       loadOlderThoughts();
     } else if (el.scrollTop === 0) {
       loadNewerThoughts();
@@ -267,8 +266,8 @@ export default function HomePage() {
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 w-full flex-1">
         <div className="flex flex-col lg:flex-row gap-6 lg:items-stretch">
-          <div className="flex flex-col gap-6 w-full lg:w-1/2">
-            <section className="bg-background rounded-3xl shadow-md p-6 flex-1 flex flex-col justify-center" style={{ border: '1px solid var(--color-border)' }}>
+          <div className="flex flex-col gap-6 w-full lg:w-1/2 lg:justify-start">
+            <section className="bg-background rounded-3xl shadow-md p-6" style={{ border: '1px solid var(--color-border)' }}>
               <div className="flex items-center gap-2 mb-4">
                 <Search className="w-5 h-5 text-accent" />
                 <h2 className="text-xl font-semibold text-text-primary">Explore GitHub Profiles</h2>
@@ -280,7 +279,7 @@ export default function HomePage() {
                   const input = form.elements.namedItem("username") as HTMLInputElement;
                   handleSearch(input.value, true, e);
                 }}
-                className="flex flex-col sm:flex-row gap-3"
+                className="flex flex-row gap-3"
               >
                 <input
                   type="text"
@@ -313,22 +312,12 @@ export default function HomePage() {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <MessageSquare className="w-5 h-5 text-accent" />
-                  <h2 className="text-xl font-semibold text-text-primary">Community Thoughts About You</h2>
+                  <h2 className="text-xl font-semibold text-text-primary">Community Thoughts <span className="hidden sm:inline">About You</span></h2>
                 </div>
                 <span className="text-sm text-text-muted">{totalThoughts}</span>
               </div>
 
-              {initialLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="flex items-center gap-3 text-text-secondary text-sm">
-                    <span className="flex gap-1">
-                      <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:0ms]" />
-                      <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:150ms]" />
-                      <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:300ms]" />
-                    </span>
-                  </div>
-                </div>
-              ) : allThoughts.length === 0 ? (
+              {allThoughts.length === 0 && !paginationLoading ? (
                 <div className="text-center py-12">
                   <MessageSquare className="w-12 h-12 text-text-muted mx-auto mb-3" />
                   <p className="text-text-secondary">No thoughts yet</p>
@@ -347,12 +336,12 @@ export default function HomePage() {
                       </div>
                     )}
 
-                    {allThoughts.length <= 2 && (
+                    {allThoughts.length <= 2 && !paginationLoading && (
                       <div className="flex justify-center mb-2">
                         <button
                           onClick={loadNewerThoughts}
                           disabled={paginationLoading || !newestTimestamp}
-                          className="text-xs text-accent hover:text-accent disabled:opacity-30 transition-colors"
+                          className="text-xs text-accent hover:text-accent disabled:opacity-30 transition-colors cursor-pointer disabled:cursor-not-allowed"
                         >
                           ↑ Newer
                         </button>
@@ -381,16 +370,16 @@ export default function HomePage() {
                               />
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between gap-2 mb-1">
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-1 sm:gap-2">
                                     <span
-                                      className="font-medium text-text-primary hover:underline"
+                                      className="font-medium text-text-primary hover:underline text-sm sm:text-base"
                                       style={{ cursor: navigatingUser === thought.users.username ? 'wait' : 'pointer' }}
                                       onClick={() => handleSearch(thought.users.username)}
                                     >
                                       {thought.users.username}
                                     </span>
                                     {thought.repo_name && (
-                                      <span className="flex items-center gap-1 text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full">
+                                      <span className="flex items-center gap-1 text-xs sm:text-sm bg-accent/10 text-accent px-2 py-0.5 rounded-full">
                                         {thought.repo_name}
                                       </span>
                                     )}
@@ -405,12 +394,12 @@ export default function HomePage() {
                       </div>
                     </div>
 
-                    {allThoughts.length <= 2 && (
+                    {allThoughts.length <= 2 && !paginationLoading && (
                       <div className="flex justify-center mt-2">
                         <button
                           onClick={loadOlderThoughts}
                           disabled={paginationLoading || !oldestTimestamp}
-                          className="text-xs text-accent hover:text-accent disabled:opacity-30 transition-colors"
+                          className="text-xs text-accent hover:text-accent disabled:opacity-30 transition-colors cursor-pointer disabled:cursor-not-allowed"
                         >
                           Older ↓
                         </button>
@@ -452,24 +441,26 @@ export default function HomePage() {
                 ].map((item, index) => (
                   <div
                     key={index}
-                    className="bg-surface p-4 rounded-xl flex flex-col gap-1 relative"
+                    className="bg-surface p-4 rounded-xl flex flex-col gap-1"
                     style={{ border: '1px solid var(--color-border)' }}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-text-primary">{item.title}</span>
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-semibold text-text-primary">{item.title}</span>
+                        <span
+                          className="text-xs font-medium"
+                          style={{
+                            color: item.date === "Live now" ? "#4eff91" :
+                                  item.date === "Coming soon" ? "#22ffff" :
+                                  "var(--color-text-muted)"
+                          }}
+                        >
+                          {item.date}
+                        </span>
+                      </div>
                       <Sparkles className="w-4 h-4 text-accent" />
                     </div>
                     <p className="text-sm text-text-secondary">{item.description}</p>
-                    <span
-                      className="text-xs font-medium absolute bottom-3 right-4"
-                      style={{
-                        color: item.date === "Live now" ? "#4eff91" :
-                              item.date === "Coming soon" ? "#22ffff" :
-                              "var(--color-text-muted)"
-                      }}
-                    >
-                      {item.date}
-                    </span>
                   </div>
                 ))}
               </div>
