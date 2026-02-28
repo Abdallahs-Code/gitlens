@@ -1,7 +1,8 @@
 "use client";
 
 import axios from "axios";
-import { useState, useEffect, useRef } from "react";
+import { flushSync } from "react-dom";
+import { useState, useEffect, useRef, useCallback, useReducer } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { GitHubProfile, GitHubRepo, Thought } from "@/lib/types";
 import { fetchUserData, fetchThoughts, addThought, formatDate, summarizeProfile } from "@/lib/api/api.client";
@@ -41,14 +42,18 @@ export default function UserProfilePage() {
   const [thoughtsTotal, setThoughtsTotal] = useState<number | null>(null);
   const [repoThoughtsTotal, setRepoThoughtsTotal] = useState<{ [repoName: string]: number | null }>({});
 
+  const [showThoughts, setShowThoughts] = useState(false);
+  const [showRepoThoughts, setShowRepoThoughts] = useState<{ [repoName: string]: boolean }>({});
+
+  const userNeedsFallbackRef = useRef(false);
+  const repoNeedsFallbackRef = useRef<{ [repoName: string]: boolean }>({});
+  const [, forceUpdate] = useReducer(x => x + 1, 0);
+
   const [displayedSummary, setDisplayedSummary] = useState<string>("");
   const [summaryExpanded, setSummaryExpanded] = useState(true);
   const [typingDone, setTypingDone] = useState(false);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
-
-  const [showThoughts, setShowThoughts] = useState(false);
-  const [showRepoThoughts, setShowRepoThoughts] = useState<{ [repoName: string]: boolean }>({});
 
   const [compareLoading, setCompareLoading] = useState(false);
   const [matchLoading, setMatchLoading] = useState(false);
@@ -128,8 +133,48 @@ export default function UserProfilePage() {
     loadUserData();
   }, [urlUsername]);
 
+  const checkNeedsFallback = useCallback((key: 'user' | string, el: HTMLDivElement | null) => {
+    if (!el) return;
+    const fallback = el.scrollHeight <= el.clientHeight;
+    if (key === 'user') {
+      userNeedsFallbackRef.current = fallback;
+    } else {
+      repoNeedsFallbackRef.current = { ...repoNeedsFallbackRef.current, [key]: fallback };
+    }
+    forceUpdate();
+  }, []);
+
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      checkNeedsFallback('user', thoughtsScrollRef.current);
+    });
+  }, [thoughts]);
+
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      Object.entries(repoScrollRefs.current).forEach(([repoName, el]) => {
+        checkNeedsFallback(repoName, el);
+      });
+    });
+  }, [repoThoughts]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      checkNeedsFallback('user', thoughtsScrollRef.current);
+      Object.entries(repoScrollRefs.current).forEach(([repoName, el]) => {
+        checkNeedsFallback(repoName, el);
+      });
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [checkNeedsFallback]);
+
   const handleToggleRepoThoughts = (repoName: string) => {
-    setShowRepoThoughts((prev) => ({ ...prev, [repoName]: !prev[repoName] }));
+    const next = !showRepoThoughts[repoName];
+    flushSync(() => setShowRepoThoughts((prev) => ({ ...prev, [repoName]: next })));
+    if (next) {
+      checkNeedsFallback(repoName, repoScrollRefs.current[repoName]);
+    }
   };
 
   const loadOlderThoughts = async () => {
@@ -324,7 +369,8 @@ export default function UserProfilePage() {
     loadNewer: () => void,
     loadOlder: () => void,
     newestTs: string | null,
-    oldestTs: string | null
+    oldestTs: string | null,
+    fallback: boolean
   ) => (
     <div className="relative rounded-xl">
       {paginationLoading && (
@@ -337,7 +383,7 @@ export default function UserProfilePage() {
         </div>
       )}
 
-      {thoughtList.length <= 2 && !paginationLoading && (
+      {fallback && !paginationLoading && (
         <div className="flex justify-center mb-2">
           <button
             onClick={loadNewer}
@@ -355,14 +401,14 @@ export default function UserProfilePage() {
         className={`bg-surface rounded-xl overflow-y-auto transition-opacity ${paginationLoading ? 'opacity-50' : 'opacity-100'}`}
         style={{ maxHeight: '240px' }}
       >
-        <div className="p-4 flex flex-col gap-4">
+        <div className="p-3 sm:p-4 flex flex-col gap-3 sm:gap-4">
           {thoughtList.map((thought, index) => (
-            <div key={thought.created_at} className={index !== thoughtList.length - 1 ? "pb-4 border-b border-border" : ""}>
+            <div key={thought.created_at} className={index !== thoughtList.length - 1 ? "pb-3 sm:pb-4 border-b border-border" : ""}>
               <div className="flex items-start gap-3">
                 <img
                   src={thought.users.avatar_url}
                   alt={thought.users.username}
-                  className="w-9 h-9 rounded-full mt-1 shrink-0"
+                  className="w-7 h-7 sm:w-9 sm:h-9 rounded-full mt-1 shrink-0"
                   style={{
                     border: '1px solid var(--color-border)',
                     cursor: navigatingUser === thought.users.username ? 'wait' : 'pointer'
@@ -372,15 +418,15 @@ export default function UserProfilePage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
                     <span
-                      className="font-medium text-text-primary hover:underline"
+                      className="font-medium text-text-primary hover:underline text-xs sm:text-base"
                       style={{ cursor: navigatingUser === thought.users.username ? 'wait' : 'pointer' }}
                       onClick={() => handleUserNavigation(thought.users.username)}
                     >
                       {thought.users.username}
                     </span>
-                    <span className="text-xs text-text-muted shrink-0">{formatDate(thought.created_at)}</span>
+                    <span className="text-[10px] sm:text-xs text-text-muted shrink-0">{formatDate(thought.created_at)}</span>
                   </div>
-                  <p className="text-text-secondary text-sm">{thought.content}</p>
+                  <p className="text-text-secondary text-xs sm:text-sm">{thought.content}</p>
                 </div>
               </div>
             </div>
@@ -388,7 +434,7 @@ export default function UserProfilePage() {
         </div>
       </div>
 
-      {thoughtList.length <= 2 && !paginationLoading && (
+      {fallback && !paginationLoading && (
         <div className="flex justify-center mt-2">
           <button
             onClick={loadOlder}
@@ -596,7 +642,10 @@ export default function UserProfilePage() {
         <section className="mt-8">
           <div className="flex justify-center sm:justify-start">
             <button
-              onClick={() => setShowThoughts((prev) => !prev)}
+              onClick={() => {
+                flushSync(() => setShowThoughts((prev) => !prev));
+                checkNeedsFallback('user', thoughtsScrollRef.current);
+              }}
               className="btn-white text-sm text-center mb-3 flex items-center justify-center gap-2"
             >
               <span className="flex items-center gap-1.5">
@@ -633,7 +682,8 @@ export default function UserProfilePage() {
                   loadNewerThoughts,
                   loadOlderThoughts,
                   thoughtsNewestTimestamp,
-                  thoughtsOldestTimestamp
+                  thoughtsOldestTimestamp,
+                  userNeedsFallbackRef.current
                 )}
 
               <form
@@ -737,7 +787,8 @@ export default function UserProfilePage() {
                       () => loadNewerRepoThoughts(repo.name),
                       () => loadOlderRepoThoughts(repo.name),
                       repoNewestTimestamp[repo.name] ?? null,
-                      repoOldestTimestamp[repo.name] ?? null
+                      repoOldestTimestamp[repo.name] ?? null,
+                      repoNeedsFallbackRef.current[repo.name] ?? false
                     )}
 
                   <form

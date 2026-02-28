@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { User, Thought } from "@/lib/types";
 import { Unplug, MessageSquare, Search, Github, Newspaper, Sparkles } from "lucide-react";
@@ -18,6 +18,7 @@ export default function HomePage() {
   const [paginationLoading, setPaginationLoading] = useState(false);
   const [newestTimestamp, setNewestTimestamp] = useState<string | null>(null);
   const [oldestTimestamp, setOldestTimestamp] = useState<string | null>(null);
+  const [needsFallback, setNeedsFallback] = useState(false);
   const [navigatingUser, setNavigatingUser] = useState<string | null>(null);
   const [githubLoading, setGithubLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -32,6 +33,17 @@ export default function HomePage() {
       loadUserThoughts();
     }
   }, [user]);
+
+  useEffect(() => {
+    window.addEventListener('resize', checkNeedsFallback);
+    return () => window.removeEventListener('resize', checkNeedsFallback);
+  }, []);
+
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      checkNeedsFallback();
+    });
+  }, [allThoughts]);
 
   const checkAuth = async () => {
     try {
@@ -106,6 +118,12 @@ export default function HomePage() {
       loadNewerThoughts();
     }
   };
+
+  const checkNeedsFallback = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setNeedsFallback(el.scrollHeight <= el.clientHeight);
+  }, []);
 
   const handleGitHubFlow = () => {
     setGithubLoading(true);
@@ -336,16 +354,22 @@ export default function HomePage() {
                       </div>
                     )}
 
-                    {allThoughts.length <= 2 && !paginationLoading && (
-                      <div className="flex justify-center mb-2">
-                        <button
-                          onClick={loadNewerThoughts}
-                          disabled={paginationLoading || !newestTimestamp}
-                          className="text-xs text-accent hover:text-accent disabled:opacity-30 transition-colors cursor-pointer disabled:cursor-not-allowed"
-                        >
-                          ↑ Newer
-                        </button>
-                      </div>
+                    {needsFallback && !paginationLoading && (
+                      <button
+                        onClick={loadNewerThoughts}
+                        disabled={paginationLoading || !newestTimestamp}
+                        className="w-full disabled:opacity-30 group"
+                      >
+                        <svg viewBox="0 0 200 20" preserveAspectRatio="none" className="w-full h-4 text-accent" style={{ overflow: 'visible', display: 'block' }}>
+                          <polyline
+                            points="60,12 90,12 100,4 110,12 140,12"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            vectorEffect="non-scaling-stroke"
+                          />
+                        </svg>
+                      </button>
                     )}
 
                     <div
@@ -354,14 +378,14 @@ export default function HomePage() {
                       className={`bg-surface rounded-xl overflow-y-auto transition-opacity ${paginationLoading ? 'opacity-50' : 'opacity-100'}`}
                       style={{ maxHeight: '240px' }}
                     >
-                      <div className="p-4 flex flex-col gap-4">
+                      <div className="p-3 sm:p-4 flex flex-col gap-3 sm:gap-4">
                         {allThoughts.map((thought, index) => (
-                          <div key={thought.created_at} className={index !== allThoughts.length - 1 ? "pb-4 border-b border-border" : ""}>
+                          <div key={thought.created_at} className={index !== allThoughts.length - 1 ? "pb-3 sm:pb-4 border-b border-border" : ""}>
                             <div className="flex items-start gap-3">
                               <img
                                 src={thought.users.avatar_url}
                                 alt={thought.users.username}
-                                className="w-9 h-9 rounded-full mt-1 shrink-0"
+                                className="w-7 h-7 sm:w-9 sm:h-9 rounded-full mt-1 shrink-0"
                                 style={{
                                   border: '1px solid var(--color-border)',
                                   cursor: navigatingUser === thought.users.username ? 'wait' : 'pointer'
@@ -372,21 +396,21 @@ export default function HomePage() {
                                 <div className="flex items-center justify-between gap-2 mb-1">
                                   <div className="flex items-center gap-1 sm:gap-2">
                                     <span
-                                      className="font-medium text-text-primary hover:underline text-sm sm:text-base"
+                                      className="font-medium text-text-primary hover:underline text-xs sm:text-base"
                                       style={{ cursor: navigatingUser === thought.users.username ? 'wait' : 'pointer' }}
                                       onClick={() => handleSearch(thought.users.username)}
                                     >
                                       {thought.users.username}
                                     </span>
                                     {thought.repo_name && (
-                                      <span className="flex items-center gap-1 text-xs sm:text-sm bg-accent/10 text-accent px-2 py-0.5 rounded-full">
+                                      <span className="flex items-center gap-1 text-[10px] sm:text-sm bg-accent/10 text-accent px-1.5 sm:px-2 py-0.5 rounded-full">
                                         {thought.repo_name}
                                       </span>
                                     )}
                                   </div>
-                                  <span className="text-xs text-text-muted shrink-0">{formatDate(thought.created_at)}</span>
+                                  <span className="text-[10px] sm:text-xs text-text-muted shrink-0">{formatDate(thought.created_at)}</span>
                                 </div>
-                                <p className="text-text-secondary text-sm">{thought.content}</p>
+                                <p className="text-text-secondary text-xs sm:text-sm">{thought.content}</p>
                               </div>
                             </div>
                           </div>
@@ -394,7 +418,7 @@ export default function HomePage() {
                       </div>
                     </div>
 
-                    {allThoughts.length <= 2 && !paginationLoading && (
+                    {needsFallback && !paginationLoading && (
                       <div className="flex justify-center mt-2">
                         <button
                           onClick={loadOlderThoughts}
