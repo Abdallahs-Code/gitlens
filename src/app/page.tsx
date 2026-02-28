@@ -100,7 +100,7 @@ export default function HomePage() {
     const el = scrollRef.current;
     if (!el || paginationLoading) return;
 
-    if (el.scrollTop + el.clientHeight >= el.scrollHeight) {
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 5) {
       loadOlderThoughts();
     } else if (el.scrollTop === 0) {
       loadNewerThoughts();
@@ -412,13 +412,13 @@ export default function HomePage() {
           </div>
 
           <div className="w-full lg:w-1/2">
-            <section className="bg-background rounded-3xl shadow-md p-6 h-full" style={{ border: '1px solid var(--color-border)' }}>
+            <section className="bg-background rounded-3xl shadow-md p-6 pb-5 h-full" style={{ border: '1px solid var(--color-border)' }}>
               <div className="flex items-center gap-2 mb-6">
                 <Newspaper className="w-5 h-5 text-accent" />
                 <h2 className="text-xl font-semibold text-text-primary">What&apos;s New</h2>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-4 -mt-3">
                 {[
                   {
                     title: "AI Profile Summarization",

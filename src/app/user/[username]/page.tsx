@@ -170,7 +170,7 @@ export default function UserProfilePage() {
   const handleThoughtsScroll = () => {
     const el = thoughtsScrollRef.current;
     if (!el || thoughtsPaginationLoading) return;
-    if (el.scrollTop + el.clientHeight >= el.scrollHeight) {
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 5) {
       loadOlderThoughts();
     } else if (el.scrollTop === 0) {
       loadNewerThoughts();
@@ -217,7 +217,7 @@ export default function UserProfilePage() {
   const handleRepoThoughtsScroll = (repoName: string) => {
     const el = repoScrollRefs.current[repoName];
     if (!el || repoPaginationLoading[repoName]) return;
-    if (el.scrollTop + el.clientHeight >= el.scrollHeight) {
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 5) {
       loadOlderRepoThoughts(repoName);
     } else if (el.scrollTop === 0) {
       loadNewerRepoThoughts(repoName);
