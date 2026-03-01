@@ -523,13 +523,13 @@ export default function UserProfilePage() {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen text-center px-4">
-        <p className="p-6 text-error text-2xl flex items-center justify-center gap-2">
+        <p className="p-6 text-text-muted text-2xl italic flex items-center justify-center gap-2">
           <Frown className="w-8 h-8" />
           {error}
         </p>
         <button
           onClick={() => router.push("/")}
-          className="btn-primary w-full sm:w-auto"
+          className="btn-primary w-auto"
         >
           Return
         </button>
@@ -540,13 +540,13 @@ export default function UserProfilePage() {
   if (!profile) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen text-center px-4">
-        <p className="p-6 text-text-primary text-2xl flex items-center justify-center gap-2">
+        <p className="p-6 text-text-muted text-2xl italic flex items-center justify-center gap-2">
           <Frown className="w-8 h-8" />
           No data found
         </p>
         <button
           onClick={() => router.push("/")}
-          className="btn-primary w-full sm:w-auto"
+          className="btn-primary w-auto"
         >
           Return
         </button>

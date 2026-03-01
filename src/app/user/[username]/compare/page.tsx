@@ -210,8 +210,8 @@ function CompareContent() {
                 </button>
               </div>
               {error && (
-                <p className="text-error mt-2 flex items-center gap-2 text-lg">
-                  <Frown className="w-5 h-5" />
+                <p className="p-6 text-text-muted text-2xl italic flex items-center justify-center gap-2">
+                  <Frown className="w-8 h-8" />
                   {error}
                 </p>
               )}
