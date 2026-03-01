@@ -48,12 +48,12 @@ function isRelevantFile(path: string): boolean {
   );
 }
 
-async function analyzeRepo(repoFullName: string) {
+async function analyzeRepo(user_id: number, repoFullName: string) {
   const [owner, repo] = repoFullName.split('/');
 
   const [repoResponse, languagesResponse] = await Promise.all([
-    githubFetch(`https://api.github.com/repos/${owner}/${repo}`),
-    githubFetch(`https://api.github.com/repos/${owner}/${repo}/languages`)
+    githubFetch(`https://api.github.com/repos/${owner}/${repo}`, user_id),
+    githubFetch(`https://api.github.com/repos/${owner}/${repo}/languages`, user_id)
   ]);
 
   const repoJson = await repoResponse.json();
@@ -63,7 +63,7 @@ async function analyzeRepo(repoFullName: string) {
   const description = repoJson.description || '';
 
   const treeResponse = await githubFetch(
-    `https://api.github.com/repos/${owner}/${repo}/git/trees/${defaultBranch}?recursive=1`
+    `https://api.github.com/repos/${owner}/${repo}/git/trees/${defaultBranch}?recursive=1`, user_id
   );
   const treeJson = await treeResponse.json();
   const files = (treeJson.tree as { path: string; type: string; sha: string }[])
@@ -91,7 +91,8 @@ async function analyzeRepo(repoFullName: string) {
   const fileContentsPromises = files.map(async (file) => {
     try {
       const contentResponse = await githubFetch(
-        `https://api.github.com/repos/${owner}/${repo}/git/blobs/${file.sha}`
+        `https://api.github.com/repos/${owner}/${repo}/git/blobs/${file.sha}`,
+        user_id
       );
       const contentJson = await contentResponse.json();
 
@@ -128,14 +129,14 @@ async function analyzeRepo(repoFullName: string) {
   };
 }
 
-async function fetchAllRepos(username: string) {
+async function fetchAllRepos(user_id: number, username: string) {
   const perPage = 100;
   let page = 1;
   const allRepos: Array<{ full_name: string }> = [];
 
   while (true) {
     const response = await githubFetch(
-      `https://api.github.com/users/${username}/repos?per_page=${perPage}&page=${page}`
+      `https://api.github.com/users/${username}/repos?per_page=${perPage}&page=${page}`, user_id
     );
 
     const repos = await response.json();
@@ -156,13 +157,14 @@ async function fetchAllRepos(username: string) {
   return allRepos;
 }
 
-async function analyzeProfile(username: string) {
+async function analyzeProfile(user_id: number, username: string) {
   const userResponse = await githubFetch(
-    `https://api.github.com/users/${username}`
+    `https://api.github.com/users/${username}`,
+    user_id
   );
 
   const userJson = await userResponse.json();
-  const repos = await fetchAllRepos(username);
+  const repos = await fetchAllRepos(user_id, username);
 
   const bio = userJson.bio || '';
   const company = userJson.company || '';
@@ -201,7 +203,7 @@ async function analyzeProfile(username: string) {
   for (let i = 0; i < repos.length; i += CONCURRENCY) {
     const batch = repos.slice(i, i + CONCURRENCY);
     const batchResults = await Promise.allSettled(
-      batch.map(repo => analyzeRepo(repo.full_name))
+      batch.map(repo => analyzeRepo(user_id, repo.full_name))
     );
     repoResults.push(...batchResults);
   }
@@ -268,6 +270,7 @@ export async function POST(
   { params }: { params: Promise<{ username: string }> }
 ) {
   try {
+    const user_id = Number(req.headers.get('user_id'));
     const { username } = await params;
 
     if (!username || typeof username !== 'string') {
@@ -277,7 +280,7 @@ export async function POST(
       );
     }
 
-    const result = await analyzeProfile(username);
+    const result = await analyzeProfile(user_id, username);
 
     return NextResponse.json(
       { success: true, data: result },

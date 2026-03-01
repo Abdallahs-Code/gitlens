@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { SignJWT } from 'jose';
 import { getRedisClient } from '@/lib/services/redis';
 import { supabase } from '@/lib/services/supabase';
-import { encryptToken, decryptToken } from '@/lib/auth';
+import { encrypt, decrypt } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (existingUser?.github_token_encrypted) {
-      const oldToken = decryptToken(existingUser.github_token_encrypted);
+      const oldToken = decrypt(existingUser.github_token_encrypted);
 
       await fetch(`https://api.github.com/applications/${process.env.GITHUB_CLIENT_ID}/token`, {
         method: 'DELETE',
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const encryptedToken = encryptToken(accessToken);
+    const encryptedToken = encrypt(accessToken);
 
     const { data: user, error } = await supabase
       .from('users')

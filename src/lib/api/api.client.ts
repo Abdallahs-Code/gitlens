@@ -23,6 +23,11 @@ export const getCurrentUser = async () => {
   return data;
 };
 
+export const setGeminiKey = async (gemini_key: string): Promise<boolean> => {
+  const { data } = await axios.post(`${API_BASE}/api/key`, { gemini_key });
+  return data.success;
+};
+
 export const fetchUserData = async (username: string): Promise<{ profile: GitHubProfile; repos: GitHubRepo[] }> => {
   try {
     const { data } = await axios.get(`${API_BASE}/api/user/${username}`);

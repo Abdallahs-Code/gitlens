@@ -6,6 +6,7 @@ export async function GET(
   req: NextRequest, 
   context: { params: Promise<{ username: string }> }
 ) {
+  const user_id = Number(req.headers.get('user_id'));
   const url = new URL(req.url);
   const opponent = url.searchParams.get('opponent');
 
@@ -18,8 +19,8 @@ export async function GET(
   try {
     const fetchUserData = async (username: string) => {
       const [profileRes, reposRes] = await Promise.all([
-        githubFetch(`https://api.github.com/users/${username}`),
-        githubFetch(`https://api.github.com/users/${username}/repos?per_page=100`)
+        githubFetch(`https://api.github.com/users/${username}`, user_id),
+        githubFetch(`https://api.github.com/users/${username}/repos?per_page=100`, user_id)
       ]);
 
       const profile = await profileRes.json();
@@ -50,7 +51,7 @@ export async function GET(
 
       const commitPromises = filteredRepos.map(async (repo) => {
         const commitsRes = await githubFetch(
-          `https://api.github.com/repos/${username}/${repo.name}/commits?author=${username}&per_page=1`
+          `https://api.github.com/repos/${username}/${repo.name}/commits?author=${username}&per_page=1`, user_id
         );
 
         if (!commitsRes.ok) return 0;

@@ -3,10 +3,11 @@ import { githubFetch, GitHubTokenExpiredError } from '@/lib/api/api.server';
 import { GitHubProfile, GitHubRepo } from '@/lib/types';
 
 export async function GET(req: NextRequest, context: { params: Promise<{ username: string }> }) {
+  const user_id = Number(req.headers.get('user_id'));
   const { username } = await context.params;
 
   try {
-    const profileRes = await githubFetch(`https://api.github.com/users/${username}`);
+    const profileRes = await githubFetch(`https://api.github.com/users/${username}`, user_id);
 
     if (!profileRes.ok) {
       if (profileRes.status === 404) {
@@ -30,7 +31,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ usernam
       public_repos: profile.public_repos,
     };
 
-    const reposRes = await githubFetch(`https://api.github.com/users/${username}/repos`);
+    const reposRes = await githubFetch(`https://api.github.com/users/${username}/repos`, user_id);
 
     if (!reposRes.ok) {
       if (reposRes.status === 403) {

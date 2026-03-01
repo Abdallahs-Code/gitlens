@@ -31,6 +31,7 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/api/ai/:path*',
+    '/api/key/:path*',
     '/api/thoughts/:path*',
     '/api/user/:path*',
     '/user/:path*',

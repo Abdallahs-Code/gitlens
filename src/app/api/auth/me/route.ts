@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
     const { data: user, error } = await supabase
       .from('users')
-      .select('id, username, email, avatar_url, bio')
+      .select('id, username, email, avatar_url, bio, gemini_key_encrypted') 
       .eq('id', user_id)
       .single();
 
@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
         email: user.email,
         avatar_url: user.avatar_url,
         bio: user.bio,
+        gemini_key_set: user.gemini_key_encrypted !== null,
       },
     });
 

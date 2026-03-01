@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { compareUsers, aiCompareUsers } from '@/lib/api/api.client';
+import { compareUsers, aiCompareUsers, setGeminiKey } from '@/lib/api/api.client';
 import { Frown, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 import { GitHubProfileComparison } from '@/lib/types';
 
@@ -22,6 +22,10 @@ function CompareContent() {
   const [error, setError] = useState('');
   const [aiExpanded, setAiExpanded] = useState(true);
   const [navigating, setNavigating] = useState(false);
+  const [aiError, setAiError] = useState('');
+  const [showKeyModal, setShowKeyModal] = useState(false);
+  const [keyInput, setKeyInput] = useState('');
+  const [keyLoading, setKeyLoading] = useState(false);
 
   const handleCompare = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,6 +47,7 @@ function CompareContent() {
     setAiAnalysis('');
     setDisplayedAnalysis('');
     setTypingDone(false);
+    setAiError('');
 
     try {
       const result = await compareUsers(user1, user2Input.trim());
@@ -68,8 +73,20 @@ function CompareContent() {
             setTypingDone(true);
           }
         }, 18);
-      } catch {
-        setAiAnalysis('');
+      } catch (error: unknown) {
+        const response = (error as { response?: { status?: number; data?: { error?: string } } }).response;
+        const code = response?.status;
+        const message = response?.data?.error || 'Something went wrong.';
+
+        if (code === 429) {
+          setAiError(`${message} Try again later or get a new `);
+        } else if (code === 401) {
+          setAiError(`${message} Get a new `);
+        } else if (code === 400) {
+          setAiError(`${message} Set a `);
+        } else {
+          setAiError(message);
+        }
         setAiLoading(false);
       }
     } catch {
@@ -78,6 +95,20 @@ function CompareContent() {
       setUser2Data(null);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSetKey = async () => {
+    if (!keyInput.trim()) return;
+    setKeyLoading(true);
+    try {
+      const success = await setGeminiKey(keyInput.trim());
+      if (success) {
+        setShowKeyModal(false);
+        setKeyInput('');
+      }
+    } finally {
+      setKeyLoading(false);
     }
   };
 
@@ -90,229 +121,283 @@ function CompareContent() {
   ];
 
   return (
-    <div className="flex flex-col min-h-screen w-full bg-surface">
-      <main className="mt-6 p-6 w-full sm:w-[60%] mx-auto bg-background shadow-md rounded-3xl mb-8" style={{ border: '1px solid var(--color-border)' }}>
-        <h1 className="text-2xl font-bold text-text-primary text-center mb-2">
-          GitHub Profile Comparison
-        </h1>
-        {user1 && (
-          <p className="text-text-secondary text-center mb-6">
-            Comparing with <span className="font-semibold text-accent">@{user1}</span>
-          </p>
-        )}
-
-        <form onSubmit={handleCompare} className="card mb-6">
-          <label className="block mb-2 text-text-primary font-medium">
-            Enter username to compare!
-          </label>
-          <div className="flex space-x-2">
+    <div className="relative">
+      {showKeyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-background rounded-3xl shadow-xl p-8 max-w-md w-full mx-4" style={{ border: '1px solid var(--color-border)' }}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-accent" />
+                <h2 className="text-xl font-semibold text-text-primary">Gemini API Key</h2>
+              </div>
+              <button onClick={() => setShowKeyModal(false)} className="text-text-muted hover:text-text-primary text-xl leading-none cursor-pointer">✕</button>
+            </div>
+            <p className="text-text-secondary text-sm mb-5">
+              To use AI features, provide your Gemini API key. You can get one at{' '}
+              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-accent underline">
+                Google AI Studio
+              </a>.
+            </p>
             <input
               type="text"
-              value={user2Input}
-              onChange={(e) => setUser2Input(e.target.value)}
-              placeholder="GitHub username"
-              className="input-field flex-1 !py-1.5 !text-sm"
-              suppressHydrationWarning
+              placeholder="Paste your Gemini API key"
+              value={keyInput}
+              onChange={(e) => setKeyInput(e.target.value)}
+              className="input-field w-full mb-3 !py-1.5 !text-sm"
             />
-            <button
-              type="submit"
-              disabled={loading || aiLoading || (!!displayedAnalysis && !typingDone) || !user1}
-              className="btn-primary disabled:opacity-50 !py-1.5 !text-base font-bold whitespace-nowrap"
-              suppressHydrationWarning
-            >
-              {loading ? (
-                <span className="flex gap-1 items-center justify-center">
-                  <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:0ms]" />
-                  <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:150ms]" />
-                  <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:300ms]" />
-                </span>
-              ) : (
-                "Start"
-              )}
-            </button>
-          </div>
-          {error && (
-            <p className="text-error mt-2 flex items-center gap-2 text-lg">
-              <Frown className="w-5 h-5" />
-              {error}
-            </p>
-          )}
-        </form>
-
-        {user1Data && user2Data && (
-          <div className="relative flex items-center mt-2 mb-6">
-            <div
-              className="flex-1 h-px"
-              style={{ background: "linear-gradient(to left, var(--color-border), transparent)" }}
-            />
-            <div
-              className="flex-1 h-px"
-              style={{ background: "linear-gradient(to right, var(--color-border), transparent)" }}
-            />
-          </div>
-        )}
-
-        {user1Data && user2Data && (
-          <div className="space-y-6">
-            <div className="flex items-center mb-4">
-              <div className="flex-1 text-center">
-                <img
-                  src={user1Data.avatar_url}
-                  alt={user1Data.login}
-                  className="w-20 h-20 rounded-full mx-auto"
-                  style={{ border: '2px solid var(--color-border)' }}
-                />
-                <h2 className="text-lg font-bold text-text-primary mt-2">
-                  {user1Data.name || user1Data.login}
-                </h2>
-                <a
-                  href={user1Data.html_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-accent hover:text-accent-hover"
-                >
-                  @{user1Data.login}
-                </a>
-                {user1Data.bio && <p className="text-text-secondary mt-1 text-sm">{user1Data.bio}</p>}
-              </div>
-
-              <div className="flex items-center justify-center text-2xl font-bold text-text-muted flex-shrink-0 w-12 sm:w-28">
-                VS
-              </div>
-
-              <div className="flex-1 text-center">
-                <img
-                  src={user2Data.avatar_url}
-                  alt={user2Data.login}
-                  className="w-20 h-20 rounded-full mx-auto"
-                  style={{ border: '2px solid var(--color-border)' }}
-                />
-                <h2 className="text-lg font-bold text-text-primary mt-2">
-                  {user2Data.name || user2Data.login}
-                </h2>
-                <a
-                  href={user2Data.html_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-accent hover:text-accent-hover"
-                >
-                  @{user2Data.login}
-                </a>
-                {user2Data.bio && <p className="text-text-secondary mt-1 text-sm">{user2Data.bio}</p>}
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              {stats.map(({ label, key }) => {
-                const v1 = Number(user1Data[key]) || 0;
-                const v2 = Number(user2Data[key]) || 0;
-                const winner = v1 > v2 ? 1 : v1 < v2 ? 2 : 0;
-
-                return (
-                  <div
-                    key={key}
-                    className="flex items-center rounded-xl px-4 py-2.5"
-                    style={{ background: 'rgba(128,128,128,0.06)' }}
-                  >
-                    <span
-                      className="flex-1 text-center tabular-nums transition-all"
-                      style={{
-                        fontSize: winner === 1 ? '1rem' : '0.85rem',
-                        fontWeight: winner === 1 ? 700 : 400,
-                        color: winner === 1 ? '#22c55e' : 'var(--color-text-muted)',
-                      }}
-                    >
-                      {v1.toLocaleString()}
-                    </span>
-
-                    <span
-                      className="w-28 text-center text-xs font-medium tracking-wide uppercase"
-                      style={{ color: 'var(--color-text-muted)' }}
-                    >
-                      {label}
-                    </span>
-
-                    <span
-                      className="flex-1 text-center tabular-nums transition-all"
-                      style={{
-                        fontSize: winner === 2 ? '1rem' : '0.85rem',
-                        fontWeight: winner === 2 ? 700 : 400,
-                        color: winner === 2 ? '#22c55e' : 'var(--color-text-muted)',
-                      }}
-                    >
-                      {v2.toLocaleString()}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div
-              className="rounded-2xl overflow-hidden"
-              style={{ border: '1px solid var(--color-border)' }}
-            >
-              <button
-                type="button"
-                onClick={() => setAiExpanded((prev) => !prev)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-surface hover:bg-surface/80 transition-colors"
-              >
-                <span className="flex items-center gap-2 font-semibold text-text-primary">
-                  <Sparkles className="w-4 h-4 text-accent" />
-                  AI Analysis
-                </span>
-                {aiExpanded ? (
-                  <ChevronUp className="w-4 h-4 text-text-muted" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 text-text-muted" />
-                )}
+            <div className="flex gap-3">
+              <button onClick={() => setShowKeyModal(false)} className="btn-dark flex-1 !py-1.5 !text-sm">
+                Skip for now
               </button>
-
-              {aiExpanded && (
-                <div className="px-4 py-4 bg-background">
-                  {aiLoading ? (
-                    <div className="flex items-center gap-3 text-text-secondary text-sm">
-                      <span className="flex gap-1">
-                        <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:0ms]" />
-                        <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:150ms]" />
-                        <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:300ms]" />
-                      </span>
-                    </div>
-                  ) : displayedAnalysis ? (
-                    <p className="text-text-secondary text-sm leading-relaxed whitespace-pre-line">
-                      {displayedAnalysis}
-                      {!typingDone && (
-                        <span className="inline-block w-0.5 h-4 ml-0.5 bg-text-secondary align-middle animate-pulse" />
-                      )}
-                    </p>
-                  ) : aiAnalysis === '' && !aiLoading ? (
-                    <p className="text-text-muted text-sm italic">
-                      Gemini API quota reached :(
-                    </p>
-                  ) : null}
-                </div>
-              )}
+              <button
+                onClick={handleSetKey}
+                disabled={keyLoading || !keyInput.trim()}
+                className="btn-primary flex-1 flex items-center justify-center gap-2 disabled:opacity-50 !py-1.5 !text-sm"
+              >
+                {keyLoading ? (
+                  <span className="flex gap-1 items-center">
+                    <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:0ms]" />
+                    <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:150ms]" />
+                    <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:300ms]" />
+                  </span>
+                ) : 'Save Key'}
+              </button>
             </div>
           </div>
-        )}
-
-        <div className="mt-6 mb-2 text-center">
-          <button
-            onClick={() => { setNavigating(true); router.push(`/user/${user1}`); }}
-            disabled={navigating}
-            className="btn-dark w-32 disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ cursor: navigating ? 'wait' : 'pointer' }}
-            suppressHydrationWarning
-          >
-            Back
-          </button>
         </div>
-      </main>
+      )}
 
-      <footer className="mt-auto bg-footer border-t border-border py-4">
-        <div className="max-w-4xl mx-auto text-center text-sm text-text-muted">
-          © {new Date().getFullYear()} GitLens Community. All rights reserved.
+      <div className={showKeyModal ? 'blur-sm pointer-events-none select-none' : ''}>
+        <div className="flex flex-col min-h-screen w-full bg-surface">
+          <main className="mt-6 p-6 w-full sm:w-[60%] mx-auto bg-background shadow-md rounded-3xl mb-8" style={{ border: '1px solid var(--color-border)' }}>
+            <h1 className="text-2xl font-bold text-text-primary text-center mb-2">
+              GitHub Profile Comparison
+            </h1>
+            {user1 && (
+              <p className="text-text-secondary text-center mb-6">
+                Comparing with <span className="font-semibold text-accent">@{user1}</span>
+              </p>
+            )}
+
+            <form onSubmit={handleCompare} className="card mb-6">
+              <label className="block mb-2 text-text-primary font-medium">
+                Enter username to compare!
+              </label>
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={user2Input}
+                  onChange={(e) => setUser2Input(e.target.value)}
+                  placeholder="GitHub username"
+                  className="input-field flex-1 !py-1.5 !text-sm"
+                  suppressHydrationWarning
+                />
+                <button
+                  type="submit"
+                  disabled={loading || aiLoading || (!!displayedAnalysis && !typingDone) || !user1}
+                  className="btn-primary disabled:opacity-50 !py-1.5 !text-base font-bold whitespace-nowrap"
+                  suppressHydrationWarning
+                >
+                  {loading ? (
+                    <span className="flex gap-1 items-center justify-center">
+                      <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:0ms]" />
+                      <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:150ms]" />
+                      <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:300ms]" />
+                    </span>
+                  ) : (
+                    "Start"
+                  )}
+                </button>
+              </div>
+              {error && (
+                <p className="text-error mt-2 flex items-center gap-2 text-lg">
+                  <Frown className="w-5 h-5" />
+                  {error}
+                </p>
+              )}
+            </form>
+
+            {user1Data && user2Data && (
+              <div className="relative flex items-center mt-2 mb-6">
+                <div
+                  className="flex-1 h-px"
+                  style={{ background: "linear-gradient(to left, var(--color-border), transparent)" }}
+                />
+                <div
+                  className="flex-1 h-px"
+                  style={{ background: "linear-gradient(to right, var(--color-border), transparent)" }}
+                />
+              </div>
+            )}
+
+            {user1Data && user2Data && (
+              <div className="space-y-6">
+                <div className="flex items-center mb-4">
+                  <div className="flex-1 text-center">
+                    <img
+                      src={user1Data.avatar_url}
+                      alt={user1Data.login}
+                      className="w-20 h-20 rounded-full mx-auto"
+                      style={{ border: '2px solid var(--color-border)' }}
+                    />
+                    <h2 className="text-lg font-bold text-text-primary mt-2">
+                      {user1Data.name || user1Data.login}
+                    </h2>
+                    <a
+                      href={user1Data.html_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-accent hover:text-accent-hover"
+                    >
+                      @{user1Data.login}
+                    </a>
+                    {user1Data.bio && <p className="text-text-secondary mt-1 text-sm">{user1Data.bio}</p>}
+                  </div>
+
+                  <div className="flex items-center justify-center text-2xl font-bold text-text-muted flex-shrink-0 w-12 sm:w-28">
+                    VS
+                  </div>
+
+                  <div className="flex-1 text-center">
+                    <img
+                      src={user2Data.avatar_url}
+                      alt={user2Data.login}
+                      className="w-20 h-20 rounded-full mx-auto"
+                      style={{ border: '2px solid var(--color-border)' }}
+                    />
+                    <h2 className="text-lg font-bold text-text-primary mt-2">
+                      {user2Data.name || user2Data.login}
+                    </h2>
+                    <a
+                      href={user2Data.html_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-accent hover:text-accent-hover"
+                    >
+                      @{user2Data.login}
+                    </a>
+                    {user2Data.bio && <p className="text-text-secondary mt-1 text-sm">{user2Data.bio}</p>}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  {stats.map(({ label, key }) => {
+                    const v1 = Number(user1Data[key]) || 0;
+                    const v2 = Number(user2Data[key]) || 0;
+                    const winner = v1 > v2 ? 1 : v1 < v2 ? 2 : 0;
+
+                    return (
+                      <div
+                        key={key}
+                        className="flex items-center rounded-xl px-4 py-2.5"
+                        style={{ background: 'rgba(128,128,128,0.06)' }}
+                      >
+                        <span
+                          className="flex-1 text-center tabular-nums transition-all"
+                          style={{
+                            fontSize: winner === 1 ? '1rem' : '0.85rem',
+                            fontWeight: winner === 1 ? 700 : 400,
+                            color: winner === 1 ? '#22c55e' : 'var(--color-text-muted)',
+                          }}
+                        >
+                          {v1.toLocaleString()}
+                        </span>
+
+                        <span
+                          className="w-28 text-center text-xs font-medium tracking-wide uppercase"
+                          style={{ color: 'var(--color-text-muted)' }}
+                        >
+                          {label}
+                        </span>
+
+                        <span
+                          className="flex-1 text-center tabular-nums transition-all"
+                          style={{
+                            fontSize: winner === 2 ? '1rem' : '0.85rem',
+                            fontWeight: winner === 2 ? 700 : 400,
+                            color: winner === 2 ? '#22c55e' : 'var(--color-text-muted)',
+                          }}
+                        >
+                          {v2.toLocaleString()}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div
+                  className="rounded-2xl overflow-hidden"
+                  style={{ border: '1px solid var(--color-border)' }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setAiExpanded((prev) => !prev)}
+                    className="w-full flex items-center justify-between px-4 py-3 bg-surface hover:bg-surface/80 transition-colors"
+                  >
+                    <span className="flex items-center gap-2 font-semibold text-text-primary">
+                      <Sparkles className="w-4 h-4 text-accent" />
+                      AI Analysis
+                    </span>
+                    {aiExpanded ? (
+                      <ChevronUp className="w-4 h-4 text-text-muted" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-text-muted" />
+                    )}
+                  </button>
+
+                  {aiExpanded && (
+                    <div className="px-4 py-4 bg-background">
+                      {aiLoading ? (
+                        <div className="flex items-center gap-3 text-text-secondary text-sm">
+                          <span className="flex gap-1">
+                            <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:0ms]" />
+                            <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:150ms]" />
+                            <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:300ms]" />
+                          </span>
+                        </div>
+                      ) : displayedAnalysis ? (
+                        <p className="text-text-secondary text-sm leading-relaxed whitespace-pre-line">
+                          {displayedAnalysis}
+                          {!typingDone && (
+                            <span className="inline-block w-0.5 h-4 ml-0.5 bg-text-secondary align-middle animate-pulse" />
+                          )}
+                        </p>
+                      ) : aiAnalysis === '' && !aiLoading ? (
+                        <p className="text-text-muted text-sm italic">
+                          {aiError}
+                          {(aiError.endsWith('get a new ') || aiError.endsWith('Get a new ') || aiError.endsWith('Set a ')) && (
+                            <button onClick={() => setShowKeyModal(true)} className="text-accent underline cursor-pointer hover:text-accent-hover">
+                              key
+                            </button>
+                          )}
+                        </p>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="mt-6 mb-2 text-center">
+              <button
+                onClick={() => { setNavigating(true); router.push(`/user/${user1}`); }}
+                disabled={navigating}
+                className="btn-dark w-32 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ cursor: navigating ? 'wait' : 'pointer' }}
+                suppressHydrationWarning
+              >
+                Back
+              </button>
+            </div>
+          </main>
+
+          <footer className="mt-auto bg-footer border-t border-border py-4">
+            <div className="max-w-4xl mx-auto text-center text-sm text-text-muted">
+              © {new Date().getFullYear()} GitLens Community. All rights reserved.
+            </div>
+          </footer>
         </div>
-      </footer>
+      </div>
     </div>
   );
 }

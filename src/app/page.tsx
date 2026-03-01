@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { User, Thought } from "@/lib/types";
 import { Unplug, MessageSquare, Search, Github, Newspaper, Sparkles } from "lucide-react";
-import { getCurrentUser, githubFlow, disconnect, fetchThoughts, formatDate } from "@/lib/api/api.client";
+import { getCurrentUser, githubFlow, disconnect, fetchThoughts, formatDate, setGeminiKey } from "@/lib/api/api.client";
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 
@@ -21,6 +21,9 @@ export default function HomePage() {
   const [needsFallback, setNeedsFallback] = useState(false);
   const [navigatingUser, setNavigatingUser] = useState<string | null>(null);
   const [githubLoading, setGithubLoading] = useState(false);
+  const [showKeyModal, setShowKeyModal] = useState(false);
+  const [keyInput, setKeyInput] = useState('');
+  const [keyLoading, setKeyLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -48,8 +51,10 @@ export default function HomePage() {
   const checkAuth = async () => {
     try {
       const data = await getCurrentUser();
-      setUser(data.user);
+      const { gemini_key_set, ...userFields } = data.user;
+      setUser(userFields);
       setAuthStatus(data.status);
+      if (!gemini_key_set) setShowKeyModal(true);
     } catch {
       setAuthStatus('unauthenticated');
     }
@@ -155,6 +160,19 @@ export default function HomePage() {
     }
   };
 
+  const handleSetKey = async () => {
+    if (!keyInput.trim()) return;
+    setKeyLoading(true);
+    try {
+      const success = await setGeminiKey(keyInput.trim());
+      if (success) {
+        setShowKeyModal(false);
+      }
+    } finally {
+      setKeyLoading(false);
+    }
+  };
+
   if (authStatus === 'loading') {
     return (
       <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
@@ -221,284 +239,336 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-surface flex flex-col">
-      <header className="bg-background border-b border-border shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-16">
-
-            <div className="flex items-center gap-3">
-              <img src="/./favicon.ico" alt="Logo" className="w-9 h-9" />
-              <div className="flex flex-col leading-tight">
-                <span className="text-lg font-bold text-text-primary tracking-tight">GitLens</span>
+    <div className="relative">
+      {showKeyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-background rounded-3xl shadow-xl p-8 max-w-md w-full mx-4" style={{ border: '1px solid var(--color-border)' }}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-accent" />
+                <h2 className="text-xl font-semibold text-text-primary">Gemini API Key</h2>
               </div>
+              <button onClick={() => setShowKeyModal(false)} className="text-text-muted hover:text-text-primary text-xl leading-none cursor-pointer">✕</button>
             </div>
-
-            <div className="flex items-center gap-3">
-              {user && (
-                <div className="flex items-center gap-3">
-                  <div className="hidden sm:flex flex-col items-end leading-tight">
-                    <span className="text-sm font-semibold text-text-primary">{user.username}</span>
-                    <span className="text-[11px] text-text-muted">Connected via GitHub</span>
-                  </div>
-                  <div className="relative">
-                    <img
-                      src={user.avatar_url}
-                      alt={user.username}
-                      className="w-9 h-9 rounded-full"
-                      style={{ border: '2px solid var(--color-border)' }}
-                    />
-                    <span
-                      className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full"
-                      style={{ background: "#4eff91", border: '2px solid var(--color-background)' }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className="h-6 w-px bg-border hidden sm:block" />
-
+            <p className="text-text-secondary text-sm mb-5">
+              To use AI features, provide your Gemini API key. You can get one at{' '}
+              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-accent underline">
+                Google AI Studio
+              </a>.
+            </p>
+            <input
+              type="text"
+              placeholder="Paste your Gemini API key"
+              value={keyInput}
+              onChange={(e) => setKeyInput(e.target.value)}
+              className="input-field w-full mb-3 !py-1.5 !text-sm"
+            />
+            <div className="flex gap-3">
               <button
-                onClick={handleDisconnect}
-                disabled={disconnectLoading}
-                className="btn-primary disabled:opacity-50 flex items-center gap-2 justify-center text-sm"
+                onClick={() => setShowKeyModal(false)}
+                className="btn-dark flex-1 !py-1.5 !text-sm"
               >
-                <Unplug className="w-4 h-4" />
-                <span className="hidden sm:inline">
-                  {disconnectLoading ? (
-                    <span className="flex gap-1 items-center justify-center">
-                      <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:0ms]" />
-                      <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:150ms]" />
-                      <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:300ms]" />
-                    </span>
-                  ) : (
-                    "Disconnect"
-                  )}
-                </span>
+                Skip for now
+              </button>
+              <button
+                onClick={handleSetKey}
+                disabled={keyLoading || !keyInput.trim()}
+                className="btn-primary flex-1 flex items-center justify-center gap-2 disabled:opacity-50 !py-1.5 !text-sm"
+              >
+                {keyLoading ? (
+                  <span className="flex gap-1 items-center">
+                    <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:0ms]" />
+                    <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:150ms]" />
+                    <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:300ms]" />
+                  </span>
+                ) : 'Save Key'}
               </button>
             </div>
-
           </div>
         </div>
-        <div className="h-[2px] w-full" style={{ background: 'linear-gradient(to right, transparent, var(--color-accent), transparent)' }} />
-      </header>
+      )}
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 w-full flex-1">
-        <div className="flex flex-col lg:flex-row gap-6 lg:items-stretch">
-          <div className="flex flex-col gap-6 w-full lg:w-1/2 lg:justify-start">
-            <section className="bg-background rounded-3xl shadow-md p-6" style={{ border: '1px solid var(--color-border)' }}>
-              <div className="flex items-center gap-2 mb-4">
-                <Search className="w-5 h-5 text-accent" />
-                <h2 className="text-xl font-semibold text-text-primary">Explore GitHub Profiles</h2>
-              </div>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const form = e.currentTarget as HTMLFormElement;
-                  const input = form.elements.namedItem("username") as HTMLInputElement;
-                  handleSearch(input.value, true, e);
-                }}
-                className="flex flex-row gap-3"
-              >
-                <input
-                  type="text"
-                  name="username"
-                  placeholder="Enter GitHub username"
-                  className="input-field flex-1 !py-1.5 !text-sm"
-                />
-                <button
-                  type="submit"
-                  className="btn-primary disabled:opacity-50 flex items-center gap-2 justify-center !py-1.5 !text-sm"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <span className="flex gap-1 items-center justify-center">
-                      <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:0ms]" />
-                      <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:150ms]" />
-                      <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:300ms]" />
-                    </span>
-                  ) : (
-                    <>
-                      <Github className="w-4 h-4" />
-                      Search
-                    </>
-                  )}
-                </button>
-              </form>
-            </section>
+      <div className={showKeyModal ? 'blur-sm pointer-events-none select-none' : ''}>
+        <div className="min-h-screen bg-surface flex flex-col">
+          <header className="bg-background border-b border-border shadow-sm">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6">
+              <div className="flex items-center justify-between h-16">
 
-            <section className="bg-background rounded-3xl shadow-md p-6" style={{ border: '1px solid var(--color-border)' }}>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5 text-accent" />
-                  <h2 className="text-xl font-semibold text-text-primary">Community Thoughts <span className="hidden sm:inline">About You</span></h2>
+                <div className="flex items-center gap-3">
+                  <img src="/./favicon.ico" alt="Logo" className="w-9 h-9" />
+                  <div className="flex flex-col leading-tight">
+                    <span className="text-lg font-bold text-text-primary tracking-tight">GitLens</span>
+                  </div>
                 </div>
-                <span className="text-sm text-text-muted">{totalThoughts}</span>
-              </div>
 
-              {allThoughts.length === 0 && !paginationLoading ? (
-                <div className="text-center py-12">
-                  <MessageSquare className="w-12 h-12 text-text-muted mx-auto mb-3" />
-                  <p className="text-text-secondary">No thoughts yet</p>
-                  <p className="text-text-muted text-sm mt-2">When others leave thoughts on your profile, they&apos;ll appear here!</p>
-                </div>
-              ) : (() => {
-                return (
-                  <div className="relative rounded-xl">
-                    {paginationLoading && (
-                      <div className="absolute inset-0 bg-surface/60 z-10 flex items-center justify-center rounded-xl pointer-events-none">
-                        <span className="flex gap-1">
-                          <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:0ms]" />
-                          <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:150ms]" />
-                          <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:300ms]" />
-                        </span>
+                <div className="flex items-center gap-3">
+                  {user && (
+                    <div className="flex items-center gap-3">
+                      <div className="hidden sm:flex flex-col items-end leading-tight">
+                        <span className="text-sm font-semibold text-text-primary">{user.username}</span>
+                        <span className="text-[11px] text-text-muted">Connected via GitHub</span>
                       </div>
-                    )}
+                      <div className="relative">
+                        <img
+                          src={user.avatar_url}
+                          alt={user.username}
+                          className="w-9 h-9 rounded-full"
+                          style={{ border: '2px solid var(--color-border)' }}
+                        />
+                        <span
+                          className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full"
+                          style={{ background: "#4eff91", border: '2px solid var(--color-background)' }}
+                        />
+                      </div>
+                    </div>
+                  )}
 
-                    <div className="flex flex-col">
-                      {needsFallback && !paginationLoading && (
-                        <button
-                          onClick={loadNewerThoughts}
-                          disabled={paginationLoading || !newestTimestamp}
-                          className="w-full disabled:opacity-30 cursor-pointer"
-                          style={{ lineHeight: 0, display: 'block' }}
-                        >
-                          <svg viewBox="0 0 200 20" preserveAspectRatio="none" className="w-full h-4 text-accent" style={{ display: 'block' }}>
-                            <polygon points="86,13.5 100,6 114,13.5" fill="currentColor" />
-                            <polyline points="60,12 90,12 100,8 110,12 140,12" fill="none" stroke="currentColor" strokeWidth="2" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                        </button> 
+                  <div className="h-6 w-px bg-border hidden sm:block" />
+
+                  <button
+                    onClick={handleDisconnect}
+                    disabled={disconnectLoading}
+                    className="btn-primary disabled:opacity-50 flex items-center gap-2 justify-center text-sm"
+                  >
+                    <Unplug className="w-4 h-4" />
+                    <span className="hidden sm:inline">
+                      {disconnectLoading ? (
+                        <span className="flex gap-1 items-center justify-center">
+                          <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:0ms]" />
+                          <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:150ms]" />
+                          <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:300ms]" />
+                        </span>
+                      ) : (
+                        "Disconnect"
                       )}
+                    </span>
+                  </button>
+                </div>
 
-                      <div
-                        ref={scrollRef}
-                        onScroll={handleScroll}
-                        className={`bg-surface rounded-xl overflow-y-auto transition-opacity ${paginationLoading ? 'opacity-50' : 'opacity-100'}`}
-                        style={{ maxHeight: '240px' }}
-                      >
-                        <div className="p-3 sm:p-4 flex flex-col gap-3 sm:gap-4">
-                          {allThoughts.map((thought, index) => (
-                            <div key={thought.created_at} className={index !== allThoughts.length - 1 ? "pb-3 sm:pb-4 border-b border-border" : ""}>
-                              <div className="flex items-start gap-3">
-                                <img
-                                  src={thought.users.avatar_url}
-                                  alt={thought.users.username}
-                                  className="w-7 h-7 sm:w-9 sm:h-9 rounded-full mt-1 shrink-0"
-                                  style={{
-                                    border: '1px solid var(--color-border)',
-                                    cursor: navigatingUser === thought.users.username ? 'wait' : 'pointer'
-                                  }}
-                                  onClick={() => handleSearch(thought.users.username)}
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center justify-between gap-2 mb-1">
-                                    <div className="flex items-center gap-1 sm:gap-2">
-                                      <span
-                                        className="font-medium text-text-primary hover:underline text-xs sm:text-base"
-                                        style={{ cursor: navigatingUser === thought.users.username ? 'wait' : 'pointer' }}
-                                        onClick={() => handleSearch(thought.users.username)}
-                                      >
-                                        {thought.users.username}
-                                      </span>
-                                      {thought.repo_name && (
-                                        <span className="flex items-center gap-1 text-[10px] sm:text-sm bg-accent/10 text-accent px-1.5 sm:px-2 py-0.5 rounded-full">
-                                          {thought.repo_name}
-                                        </span>
-                                      )}
+              </div>
+            </div>
+            <div className="h-[2px] w-full" style={{ background: 'linear-gradient(to right, transparent, var(--color-accent), transparent)' }} />
+          </header>
+
+          <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 w-full flex-1">
+            <div className="flex flex-col lg:flex-row gap-6 lg:items-stretch">
+              <div className="flex flex-col gap-6 w-full lg:w-1/2 lg:justify-start">
+                <section className="bg-background rounded-3xl shadow-md p-6" style={{ border: '1px solid var(--color-border)' }}>
+                  <div className="flex items-center gap-2 mb-4">
+                    <Search className="w-5 h-5 text-accent" />
+                    <h2 className="text-xl font-semibold text-text-primary">Explore GitHub Profiles</h2>
+                  </div>
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const form = e.currentTarget as HTMLFormElement;
+                      const input = form.elements.namedItem("username") as HTMLInputElement;
+                      handleSearch(input.value, true, e);
+                    }}
+                    className="flex flex-row gap-3"
+                  >
+                    <input
+                      type="text"
+                      name="username"
+                      placeholder="Enter GitHub username"
+                      className="input-field flex-1 !py-1.5 !text-sm"
+                    />
+                    <button
+                      type="submit"
+                      className="btn-primary disabled:opacity-50 flex items-center gap-2 justify-center !py-1.5 !text-sm"
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <span className="flex gap-1 items-center justify-center">
+                          <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:0ms]" />
+                          <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:150ms]" />
+                          <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:300ms]" />
+                        </span>
+                      ) : (
+                        <>
+                          <Github className="w-4 h-4" />
+                          Search
+                        </>
+                      )}
+                    </button>
+                  </form>
+                </section>
+
+                <section className="bg-background rounded-3xl shadow-md p-6" style={{ border: '1px solid var(--color-border)' }}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="w-5 h-5 text-accent" />
+                      <h2 className="text-xl font-semibold text-text-primary">Community Thoughts <span className="hidden sm:inline">About You</span></h2>
+                    </div>
+                    <span className="text-sm text-text-muted">{totalThoughts}</span>
+                  </div>
+
+                  {allThoughts.length === 0 && !paginationLoading ? (
+                    <div className="text-center py-12">
+                      <MessageSquare className="w-12 h-12 text-text-muted mx-auto mb-3" />
+                      <p className="text-text-secondary">No thoughts yet</p>
+                      <p className="text-text-muted text-sm mt-2">When others leave thoughts on your profile, they&apos;ll appear here!</p>
+                    </div>
+                  ) : (() => {
+                    return (
+                      <div className="relative rounded-xl">
+                        {paginationLoading && (
+                          <div className="absolute inset-0 bg-surface/60 z-10 flex items-center justify-center rounded-xl pointer-events-none">
+                            <span className="flex gap-1">
+                              <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:0ms]" />
+                              <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:150ms]" />
+                              <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:300ms]" />
+                            </span>
+                          </div>
+                        )}
+
+                        <div className="flex flex-col">
+                          {needsFallback && !paginationLoading && (
+                            <button
+                              onClick={loadNewerThoughts}
+                              disabled={paginationLoading || !newestTimestamp}
+                              className="w-full disabled:opacity-30 cursor-pointer"
+                              style={{ lineHeight: 0, display: 'block' }}
+                            >
+                              <svg viewBox="0 0 200 20" preserveAspectRatio="none" className="w-full h-4 text-accent" style={{ display: 'block' }}>
+                                <polygon points="86,13.5 100,6 114,13.5" fill="currentColor" />
+                                <polyline points="60,12 90,12 100,8 110,12 140,12" fill="none" stroke="currentColor" strokeWidth="2" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            </button> 
+                          )}
+
+                          <div
+                            ref={scrollRef}
+                            onScroll={handleScroll}
+                            className={`bg-surface rounded-xl overflow-y-auto transition-opacity ${paginationLoading ? 'opacity-50' : 'opacity-100'}`}
+                            style={{ maxHeight: '240px' }}
+                          >
+                            <div className="p-3 sm:p-4 flex flex-col gap-3 sm:gap-4">
+                              {allThoughts.map((thought, index) => (
+                                <div key={thought.created_at} className={index !== allThoughts.length - 1 ? "pb-3 sm:pb-4 border-b border-border" : ""}>
+                                  <div className="flex items-start gap-3">
+                                    <img
+                                      src={thought.users.avatar_url}
+                                      alt={thought.users.username}
+                                      className="w-7 h-7 sm:w-9 sm:h-9 rounded-full mt-1 shrink-0"
+                                      style={{
+                                        border: '1px solid var(--color-border)',
+                                        cursor: navigatingUser === thought.users.username ? 'wait' : 'pointer'
+                                      }}
+                                      onClick={() => handleSearch(thought.users.username)}
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center justify-between gap-2 mb-1">
+                                        <div className="flex items-center gap-1 sm:gap-2">
+                                          <span
+                                            className="font-medium text-text-primary hover:underline text-xs sm:text-base"
+                                            style={{ cursor: navigatingUser === thought.users.username ? 'wait' : 'pointer' }}
+                                            onClick={() => handleSearch(thought.users.username)}
+                                          >
+                                            {thought.users.username}
+                                          </span>
+                                          {thought.repo_name && (
+                                            <span className="flex items-center gap-1 text-[10px] sm:text-sm bg-accent/10 text-accent px-1.5 sm:px-2 py-0.5 rounded-full">
+                                              {thought.repo_name}
+                                            </span>
+                                          )}
+                                        </div>
+                                        <span className="text-[10px] sm:text-xs text-text-muted shrink-0">{formatDate(thought.created_at)}</span>
+                                      </div>
+                                      <p className="text-text-secondary text-xs sm:text-sm">{thought.content}</p>
                                     </div>
-                                    <span className="text-[10px] sm:text-xs text-text-muted shrink-0">{formatDate(thought.created_at)}</span>
                                   </div>
-                                  <p className="text-text-secondary text-xs sm:text-sm">{thought.content}</p>
                                 </div>
-                              </div>
+                              ))}
                             </div>
-                          ))}
+                          </div>
+
+                          {needsFallback && !paginationLoading && (
+                            <button
+                              onClick={loadOlderThoughts}
+                              disabled={paginationLoading || !oldestTimestamp}
+                              className="w-full disabled:opacity-30 cursor-pointer"
+                              style={{ lineHeight: 0, display: 'block' }}
+                            >
+                              <svg viewBox="0 0 200 20" preserveAspectRatio="none" className="w-full h-4 text-accent" style={{ display: 'block' }}>
+                                <polygon points="86,6.5 100,14 114,6.5" fill="currentColor" />
+                                <polyline points="60,8 90,8 100,12 110,8 140,8" fill="none" stroke="currentColor" strokeWidth="2" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            </button>
+                          )}
                         </div>
                       </div>
-
-                      {needsFallback && !paginationLoading && (
-                        <button
-                          onClick={loadOlderThoughts}
-                          disabled={paginationLoading || !oldestTimestamp}
-                          className="w-full disabled:opacity-30 cursor-pointer"
-                          style={{ lineHeight: 0, display: 'block' }}
-                        >
-                          <svg viewBox="0 0 200 20" preserveAspectRatio="none" className="w-full h-4 text-accent" style={{ display: 'block' }}>
-                            <polygon points="86,6.5 100,14 114,6.5" fill="currentColor" />
-                            <polyline points="60,8 90,8 100,12 110,8 140,8" fill="none" stroke="currentColor" strokeWidth="2" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })()}
-            </section>
-          </div>
-
-          <div className="w-full lg:w-1/2">
-            <section className="bg-background rounded-3xl shadow-md p-6 pb-5 h-full" style={{ border: '1px solid var(--color-border)' }}>
-              <div className="flex items-center gap-2 mb-6">
-                <Newspaper className="w-5 h-5 text-accent" />
-                <h2 className="text-xl font-semibold text-text-primary">What&apos;s New</h2>
+                    );
+                  })()}
+                </section>
               </div>
 
-              <div className="space-y-4 -mt-3">
-                {[
-                  {
-                    title: "AI Profile Summarization",
-                    description: "Let AI craft a concise, human-readable summary of any GitHub profile, highlighting key contributions, activity patterns, and areas of expertise at a glance.",
-                    date: "Live now",
-                    badge: "AI",
-                  },
-                  {
-                    title: "Job Match Analysis",
-                    description: "Paste a job description and let AI evaluate how well a GitHub profile matches the role, ideal for recruiters, hiring managers, or developers sizing up their own readiness.",
-                    date: "Live now",
-                    badge: "AI",
-                  },
-                  {
-                    title: "Explore & Ask",
-                    description: "Navigate any GitHub repository like a file explorer, then chat with AI about any file you open, understand its purpose, decode complex logic, or see how it fits into the bigger picture of the project.",
-                    date: "Coming soon",
-                    badge: "AI",
-                  },
-                ].map((item, index) => (
-                  <div
-                    key={index}
-                    className="bg-surface p-4 rounded-xl flex flex-col gap-1"
-                    style={{ border: '1px solid var(--color-border)' }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-baseline gap-2">
-                        <span className="font-semibold text-text-primary">{item.title}</span>
-                        <span
-                          className="text-xs font-medium"
-                          style={{
-                            color: item.date === "Live now" ? "#4eff91" :
-                                  item.date === "Coming soon" ? "#22ffff" :
-                                  "var(--color-text-muted)"
-                          }}
-                        >
-                          {item.date}
-                        </span>
+              <div className="w-full lg:w-1/2">
+                <section className="bg-background rounded-3xl shadow-md p-6 pb-5 h-full" style={{ border: '1px solid var(--color-border)' }}>
+                  <div className="flex items-center gap-2 mb-6">
+                    <Newspaper className="w-5 h-5 text-accent" />
+                    <h2 className="text-xl font-semibold text-text-primary">What&apos;s New</h2>
+                  </div>
+
+                  <div className="space-y-4 -mt-3">
+                    {[
+                      {
+                        title: "AI Profile Summarization",
+                        description: "Let AI craft a concise, human-readable summary of any GitHub profile, highlighting key contributions, activity patterns, and areas of expertise at a glance.",
+                        date: "Live now",
+                        badge: "AI",
+                      },
+                      {
+                        title: "Job Match Analysis",
+                        description: "Paste a job description and let AI evaluate how well a GitHub profile matches the role, ideal for recruiters, hiring managers, or developers sizing up their own readiness.",
+                        date: "Live now",
+                        badge: "AI",
+                      },
+                      {
+                        title: "Explore & Ask",
+                        description: "Navigate any GitHub repository like a file explorer, then chat with AI about any file you open, understand its purpose, decode complex logic, or see how it fits into the bigger picture of the project.",
+                        date: "Coming soon",
+                        badge: "AI",
+                      },
+                    ].map((item, index) => (
+                      <div
+                        key={index}
+                        className="bg-surface p-4 rounded-xl flex flex-col gap-1"
+                        style={{ border: '1px solid var(--color-border)' }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-baseline gap-2">
+                            <span className="font-semibold text-text-primary">{item.title}</span>
+                            <span
+                              className="text-xs font-medium"
+                              style={{
+                                color: item.date === "Live now" ? "#4eff91" :
+                                      item.date === "Coming soon" ? "#22ffff" :
+                                      "var(--color-text-muted)"
+                              }}
+                            >
+                              {item.date}
+                            </span>
+                          </div>
+                          <Sparkles className="w-4 h-4 text-accent" />
+                        </div>
+                        <p className="text-sm text-text-secondary">{item.description}</p>
                       </div>
-                      <Sparkles className="w-4 h-4 text-accent" />
-                    </div>
-                    <p className="text-sm text-text-secondary">{item.description}</p>
+                    ))}
                   </div>
-                ))}
+                </section>
               </div>
-            </section>
-          </div>
 
-        </div>
-      </main>
+            </div>
+          </main>
 
-      <footer className="mt-auto bg-footer border-t border-border py-4">
-        <div className="max-w-6xl mx-auto text-center text-sm text-text-muted px-4">
-          © {new Date().getFullYear()} GitLens Community. All rights reserved.
+          <footer className="mt-auto bg-footer border-t border-border py-4">
+            <div className="max-w-6xl mx-auto text-center text-sm text-text-muted px-4">
+              © {new Date().getFullYear()} GitLens Community. All rights reserved.
+            </div>
+          </footer>
         </div>
-      </footer>
+      </div>
     </div>
   );
 }

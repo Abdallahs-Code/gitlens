@@ -5,7 +5,7 @@ import { flushSync } from "react-dom";
 import { useState, useEffect, useRef, useCallback, useReducer } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { GitHubProfile, GitHubRepo, Thought } from "@/lib/types";
-import { fetchUserData, fetchThoughts, addThought, formatDate, summarizeProfile } from "@/lib/api/api.client";
+import { fetchUserData, fetchThoughts, addThought, formatDate, summarizeProfile, setGeminiKey } from "@/lib/api/api.client";
 import { Frown, MessageSquare, Sparkles, GitCompare, Briefcase, Scissors, ChevronDown, ChevronUp, Star, GitFork, Code2 } from "lucide-react";
 
 export default function UserProfilePage() {
@@ -60,6 +60,10 @@ export default function UserProfilePage() {
 
   const [navigatingUser, setNavigatingUser] = useState<string | null>(null);
   const [navigating, setNavigating] = useState(false);
+
+  const [showKeyModal, setShowKeyModal] = useState(false);
+  const [keyInput, setKeyInput] = useState('');
+  const [keyLoading, setKeyLoading] = useState(false);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -335,10 +339,21 @@ export default function UserProfilePage() {
           setTypingDone(true);
         }
       }, 18);
-    } catch (err) {
-      setSummaryError("Gemini API quota reached :(");
+    } catch (err: unknown) {
+      const response = (err as { response?: { status?: number; data?: { error?: string } } }).response;
+      const code = response?.status;
+      const message = response?.data?.error || 'Something went wrong.';
+
+      if (code === 429) {
+        setSummaryError(`${message} Try again later or get a new `);
+      } else if (code === 401) {
+        setSummaryError(`${message} Get a new `);
+      } else if (code === 400) {
+        setSummaryError(`${message} Set a `);
+      } else {
+        setSummaryError(message);
+      }
       setTypingDone(true);
-      console.error(err);
     } finally {
       setSummaryLoading(false);
     }
@@ -359,6 +374,20 @@ export default function UserProfilePage() {
     if (!trimmed || trimmed === username) return;
     setNavigatingUser(trimmed);
     router.push(`/user/${trimmed}`);
+  };
+
+  const handleSetKey = async () => {
+    if (!keyInput.trim()) return;
+    setKeyLoading(true);
+    try {
+      const success = await setGeminiKey(keyInput.trim());
+      if (success) {
+        setShowKeyModal(false);
+        setKeyInput('');
+      }
+    } finally {
+      setKeyLoading(false);
+    }
   };
 
   const renderScrollableThoughts = (
@@ -526,254 +555,201 @@ export default function UserProfilePage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen overflow-x-hidden bg-surface">
-      <main className="mt-4 p-4 sm:p-6 pt-6 max-w-full sm:max-w-4xl mx-auto bg-background shadow-md rounded-3xl mb-6 px-4 sm:px-6"
-        style={{ border: '1px solid var(--color-border)' }}>
-        <div className="flex flex-col sm:flex-row items-center sm:space-x-4 mb-6 space-y-4 sm:space-y-0">
-          <img
-            src={profile.avatar_url}
-            alt={profile.login}
-            className="w-20 h-20 rounded-full"
-            style={{ border: '2px solid var(--color-border)' }}
-          />
-          <div className="text-center sm:text-left">
-            <h1 className="text-2xl font-bold text-text-primary">{profile.name || profile.login}</h1>
-            <p className="text-text-secondary">
-              {profile.bio}
+    <div className="relative">
+      {showKeyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-background rounded-3xl shadow-xl p-8 max-w-md w-full mx-4" style={{ border: '1px solid var(--color-border)' }}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-accent" />
+                <h2 className="text-xl font-semibold text-text-primary">Gemini API Key</h2>
+              </div>
+              <button onClick={() => setShowKeyModal(false)} className="text-text-muted hover:text-text-primary text-xl leading-none cursor-pointer">✕</button>
+            </div>
+            <p className="text-text-secondary text-sm mb-5">
+              To use AI features, provide your Gemini API key. You can get one at{' '}
+              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-accent underline">
+                Google AI Studio
+              </a>.
             </p>
-            <div className="flex justify-center sm:justify-start flex-wrap gap-4 text-sm text-text-muted mt-2">
-              <span>Followers: {profile.followers}</span>
-              <span>Following: {profile.following}</span>
-              <span>Repos: {profile.public_repos}</span>
+            <input
+              type="text"
+              placeholder="Paste your Gemini API key"
+              value={keyInput}
+              onChange={(e) => setKeyInput(e.target.value)}
+              className="input-field w-full mb-3 !py-1.5 !text-sm"
+            />
+            <div className="flex gap-3">
+              <button onClick={() => setShowKeyModal(false)} className="btn-dark flex-1 !py-1.5 !text-sm">
+                Skip for now
+              </button>
+              <button
+                onClick={handleSetKey}
+                disabled={keyLoading || !keyInput.trim()}
+                className="btn-primary flex-1 flex items-center justify-center gap-2 disabled:opacity-50 !py-1.5 !text-sm"
+              >
+                {keyLoading ? (
+                  <span className="flex gap-1 items-center">
+                    <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:0ms]" />
+                    <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:150ms]" />
+                    <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:300ms]" />
+                  </span>
+                ) : 'Save Key'}
+              </button>
             </div>
           </div>
-          <div className="flex flex-nowrap gap-1.5 sm:gap-4 justify-end px-2 sm:px-0 sm:ml-12">
-            <button
-              onClick={handleSummarize}
-              disabled={summaryLoading || !typingDone && displayedSummary !== ""}
-              className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-1.5 sm:gap-2 !px-3 sm:!px-6 !text-sm sm:!text-base"
-              >
-              <Scissors className="w-4 h-4" />
-              {(summaryLoading || (displayedSummary !== "" && !typingDone)) ? (
-                <span className="flex gap-1 items-center justify-center">
-                  <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:0ms]" />
-                  <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:150ms]" />
-                  <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:300ms]" />
-                </span>
-              ) : (
-                "Summarize"
-              )}
-            </button>
-            <button
-              onClick={handleCompare}
-              disabled={compareLoading}
-              className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-1.5 sm:gap-2 !px-3 sm:!px-6 !text-sm sm:!text-base"
-            >
-              <GitCompare className="w-4 h-4" />
-              {compareLoading ? (
-                <span className="flex gap-1 items-center justify-center">
-                  <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:0ms]" />
-                  <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:150ms]" />
-                  <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:300ms]" />
-                </span>
-              ) : (
-                "Compare"
-              )}
-            </button>
-            <button
-              onClick={handleMatch}
-              disabled={matchLoading}
-              className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-1.5 sm:gap-2 !px-3 sm:!px-6 !text-sm sm:!text-base"
-            >
-              <Briefcase className="w-4 h-4" />
-              {matchLoading ? (
-                <span className="flex gap-1 items-center justify-center">
-                  <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:0ms]" />
-                  <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:150ms]" />
-                  <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:300ms]" />
-                </span>
-              ) : (
-                "Match"
-              )}
-            </button>
-          </div>
         </div>
+      )}
 
-        {(displayedSummary || summaryLoading || summaryError) && (
-          <div
-            className="rounded-2xl overflow-hidden mb-6"
-            style={{ border: '1px solid var(--color-border)' }}
-          >
-            <button
-              type="button"
-              onClick={() => setSummaryExpanded((prev) => !prev)}
-              className="w-full flex items-center justify-between px-4 py-3 bg-surface hover:bg-surface/80 transition-colors"
-            >
-              <span className="flex items-center gap-2 font-semibold text-text-primary">
-                <Sparkles className="w-4 h-4 text-accent" />
-                AI Summary
-              </span>
-              {summaryExpanded ? (
-                <ChevronUp className="w-4 h-4 text-text-muted" />
-              ) : (
-                <ChevronDown className="w-4 h-4 text-text-muted" />
-              )}
-            </button>
-
-            {summaryExpanded && (
-              <div className="px-4 py-4 bg-background">
-                {summaryLoading ? (
-                  <div className="flex items-center gap-3 text-text-secondary text-sm">
-                    <span className="flex gap-1">
-                      <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:0ms]" />
-                      <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:150ms]" />
-                      <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:300ms]" />
-                    </span>
-                  </div>
-                ) : summaryError ? (
-                  <p className="text-text-muted text-sm italic">{summaryError}</p>
-                ) : displayedSummary ? (
-                  <p className="text-text-secondary text-sm leading-relaxed whitespace-pre-line">
-                    {displayedSummary}
-                    {!typingDone && (
-                      <span className="inline-block w-0.5 h-4 ml-0.5 bg-text-secondary align-middle animate-pulse" />
-                    )}
-                  </p>
-                ) : null}
+      <div className={showKeyModal ? 'blur-sm pointer-events-none select-none' : ''}>
+        <div className="flex flex-col min-h-screen overflow-x-hidden bg-surface">
+          <main className="mt-4 p-4 sm:p-6 pt-6 max-w-full sm:max-w-4xl mx-auto bg-background shadow-md rounded-3xl mb-6 px-4 sm:px-6"
+            style={{ border: '1px solid var(--color-border)' }}>
+            <div className="flex flex-col sm:flex-row items-center sm:space-x-4 mb-6 space-y-4 sm:space-y-0">
+              <img
+                src={profile.avatar_url}
+                alt={profile.login}
+                className="w-20 h-20 rounded-full"
+                style={{ border: '2px solid var(--color-border)' }}
+              />
+              <div className="text-center sm:text-left">
+                <h1 className="text-2xl font-bold text-text-primary">{profile.name || profile.login}</h1>
+                <p className="text-text-secondary">
+                  {profile.bio}
+                </p>
+                <div className="flex justify-center sm:justify-start flex-wrap gap-4 text-sm text-text-muted mt-2">
+                  <span>Followers: {profile.followers}</span>
+                  <span>Following: {profile.following}</span>
+                  <span>Repos: {profile.public_repos}</span>
+                </div>
               </div>
-            )}
-          </div>
-        )}
-
-        <section className="mt-8">
-          <div className="flex justify-center sm:justify-start">
-            <button
-              onClick={() => {
-                flushSync(() => setShowThoughts((prev) => !prev));
-                checkNeedsFallback('user', thoughtsScrollRef.current);
-              }}
-              className="btn-white text-sm text-center mb-3 flex items-center justify-center gap-2"
-            >
-              <span className="flex items-center gap-1.5">
-                <MessageSquare className="w-3.5 h-3.5 text-black fill-current" />
-                {showThoughts ? "Hide" : "Thoughts"}
-              </span>
-              <span className="bg-accent text-black text-xs px-2 py-0.5 rounded-full">
-                {thoughtsTotal}
-              </span>
-            </button>
-          </div>
-
-          {showThoughts && (
-            <div className="flex flex-col gap-3">
-              {thoughtsLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <span className="flex gap-1">
-                    <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:0ms]" />
-                    <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:150ms]" />
-                    <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:300ms]" />
-                  </span>
-                </div>
-              ) : thoughtsError ? (
-                <p className="text-error">{thoughtsError}</p>
-              ) : thoughts.length === 0 ? (
-                <div className="bg-surface rounded-xl py-6 flex items-center justify-center" style={{ border: '1px solid var(--color-border)' }}>
-                  <p className="text-text-muted text-sm">No thoughts yet.</p>
-                </div>
-              ) : renderScrollableThoughts(
-                  thoughts,
-                  thoughtsScrollRef,
-                  handleThoughtsScroll,
-                  thoughtsPaginationLoading,
-                  loadNewerThoughts,
-                  loadOlderThoughts,
-                  thoughtsNewestTimestamp,
-                  thoughtsOldestTimestamp,
-                  userNeedsFallbackRef.current
-                )}
-
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleAddThought(null);
-                }}
-                className="mt-1 flex flex-row space-x-2"
-              >
-                <input
-                  type="text"
-                  value={userThoughtContent}
-                  onChange={(e) => setUserThoughtContent(e.target.value)}
-                  placeholder="Add something..."
-                  className="input-field flex-1 !py-1.5 !text-sm"
-                />
+              <div className="flex flex-nowrap gap-1.5 sm:gap-4 justify-end px-2 sm:px-0 sm:ml-12">
                 <button
-                  type="submit"
-                  disabled={userThoughtLoading}
-                  className="btn-primary disabled:opacity-50 !py-1.5 !text-sm"
-                >
-                  {userThoughtLoading ? (
+                  onClick={handleSummarize}
+                  disabled={summaryLoading || !typingDone && displayedSummary !== ""}
+                  className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-1.5 sm:gap-2 !px-3 sm:!px-6 !text-sm sm:!text-base"
+                  >
+                  <Scissors className="w-4 h-4" />
+                  {summaryLoading ? (
                     <span className="flex gap-1 items-center justify-center">
                       <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:0ms]" />
                       <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:150ms]" />
                       <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:300ms]" />
                     </span>
-                  ) : "Share"}
-                </button>
-              </form>
-            </div>
-          )}
-        </section>
-
-        <h2 className="text-xl font-semibold mt-3 mb-4 text-text-primary text-center sm:text-left">Repositories</h2>
-        <ul className="space-y-3">
-          {repos.map((repo) => (
-            <li key={repo.name} className="card-compact">
-              <div className="flex flex-row justify-between items-center flex-wrap">
-                <a
-                  href={repo.html_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-accent font-medium hover:text-accent-hover break-words"
-                >
-                  {repo.name}
-                </a>
-                <span className="text-xs text-text-muted ml-2 whitespace-nowrap">
-                  {formatDate(repo.updated_at)}
-                </span>
-              </div>
-              <p className="text-text-secondary mt-1 break-words">{repo.description}</p>
-              <div className="flex flex-row justify-between items-center mt-2 w-full">
-                <div className="flex flex-wrap gap-4 text-sm text-text-muted">
-                  <span className="flex items-center gap-1">
-                    <Star className="w-3.5 h-3.5" /> {repo.stargazers_count}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <GitFork className="w-3.5 h-3.5" /> {repo.forks_count} 
-                  </span>
-                  {repo.language && (
-                    <span className="flex items-center gap-1">
-                      <Code2 className="w-3.5 h-3.5" /> {repo.language}
-                    </span>
+                  ) : (
+                    "Summarize"
                   )}
-                </div>
-
+                </button>
                 <button
-                  onClick={() => handleToggleRepoThoughts(repo.name)}
-                  className="btn-white text-sm text-center flex items-center justify-center gap-2"
+                  onClick={handleCompare}
+                  disabled={compareLoading}
+                  className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-1.5 sm:gap-2 !px-3 sm:!px-6 !text-sm sm:!text-base"
+                >
+                  <GitCompare className="w-4 h-4" />
+                  {compareLoading ? (
+                    <span className="flex gap-1 items-center justify-center">
+                      <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:0ms]" />
+                      <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:150ms]" />
+                      <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:300ms]" />
+                    </span>
+                  ) : (
+                    "Compare"
+                  )}
+                </button>
+                <button
+                  onClick={handleMatch}
+                  disabled={matchLoading}
+                  className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-1.5 sm:gap-2 !px-3 sm:!px-6 !text-sm sm:!text-base"
+                >
+                  <Briefcase className="w-4 h-4" />
+                  {matchLoading ? (
+                    <span className="flex gap-1 items-center justify-center">
+                      <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:0ms]" />
+                      <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:150ms]" />
+                      <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:300ms]" />
+                    </span>
+                  ) : (
+                    "Match"
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {(displayedSummary || summaryLoading || summaryError) && (
+              <div
+                className="rounded-2xl overflow-hidden mb-6"
+                style={{ border: '1px solid var(--color-border)' }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setSummaryExpanded((prev) => !prev)}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-surface hover:bg-surface/80 transition-colors"
+                >
+                  <span className="flex items-center gap-2 font-semibold text-text-primary">
+                    <Sparkles className="w-4 h-4 text-accent" />
+                    AI Summary
+                  </span>
+                  {summaryExpanded ? (
+                    <ChevronUp className="w-4 h-4 text-text-muted" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-text-muted" />
+                  )}
+                </button>
+
+                {summaryExpanded && (
+                  <div className="px-4 py-4 bg-background">
+                    {summaryLoading ? (
+                      <div className="flex items-center gap-3 text-text-secondary text-sm">
+                        <span className="flex gap-1">
+                          <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:0ms]" />
+                          <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:150ms]" />
+                          <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:300ms]" />
+                        </span>
+                      </div>
+                    ) : summaryError ? (
+                      <p className="text-text-muted text-sm italic">
+                        {summaryError}
+                        {(summaryError.endsWith('get a new ') || summaryError.endsWith('Get a new ') || summaryError.endsWith('Set a ')) && (
+                          <button onClick={() => setShowKeyModal(true)} className="text-accent underline cursor-pointer hover:text-accent-hover">
+                            key
+                          </button>
+                        )}
+                      </p>
+                    ) : displayedSummary ? (
+                      <p className="text-text-secondary text-sm leading-relaxed whitespace-pre-line">
+                        {displayedSummary}
+                        {!typingDone && (
+                          <span className="inline-block w-0.5 h-4 ml-0.5 bg-text-secondary align-middle animate-pulse" />
+                        )}
+                      </p>
+                    ) : null}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <section className="mt-8">
+              <div className="flex justify-center sm:justify-start">
+                <button
+                  onClick={() => {
+                    flushSync(() => setShowThoughts((prev) => !prev));
+                    checkNeedsFallback('user', thoughtsScrollRef.current);
+                  }}
+                  className="btn-white text-sm text-center mb-3 flex items-center justify-center gap-2"
                 >
                   <span className="flex items-center gap-1.5">
                     <MessageSquare className="w-3.5 h-3.5 text-black fill-current" />
-                    {showRepoThoughts[repo.name] ? "Hide" : <span className="hidden sm:inline">Thoughts</span>}
+                    {showThoughts ? "Hide" : "Thoughts"}
                   </span>
                   <span className="bg-accent text-black text-xs px-2 py-0.5 rounded-full">
-                    {repoThoughtsTotal[repo.name]}
+                    {thoughtsTotal}
                   </span>
                 </button>
               </div>
 
-              {showRepoThoughts[repo.name] && (
-                <div className="mt-3 flex flex-col gap-3">
-                  {repoPaginationLoading[repo.name] && !(repoThoughts[repo.name]?.length) ? (
+              {showThoughts && (
+                <div className="flex flex-col gap-3">
+                  {thoughtsLoading ? (
                     <div className="flex items-center justify-center py-8">
                       <span className="flex gap-1">
                         <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:0ms]" />
@@ -781,44 +757,44 @@ export default function UserProfilePage() {
                         <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:300ms]" />
                       </span>
                     </div>
-                  ) : (repoThoughts[repo.name] ?? []).length === 0 ? (
+                  ) : thoughtsError ? (
+                    <p className="text-error">{thoughtsError}</p>
+                  ) : thoughts.length === 0 ? (
                     <div className="bg-surface rounded-xl py-6 flex items-center justify-center" style={{ border: '1px solid var(--color-border)' }}>
                       <p className="text-text-muted text-sm">No thoughts yet.</p>
                     </div>
                   ) : renderScrollableThoughts(
-                      repoThoughts[repo.name],
-                      (el) => { repoScrollRefs.current[repo.name] = el; },
-                      () => handleRepoThoughtsScroll(repo.name),
-                      repoPaginationLoading[repo.name] ?? false,
-                      () => loadNewerRepoThoughts(repo.name),
-                      () => loadOlderRepoThoughts(repo.name),
-                      repoNewestTimestamp[repo.name] ?? null,
-                      repoOldestTimestamp[repo.name] ?? null,
-                      repoNeedsFallbackRef.current[repo.name] ?? false
+                      thoughts,
+                      thoughtsScrollRef,
+                      handleThoughtsScroll,
+                      thoughtsPaginationLoading,
+                      loadNewerThoughts,
+                      loadOlderThoughts,
+                      thoughtsNewestTimestamp,
+                      thoughtsOldestTimestamp,
+                      userNeedsFallbackRef.current
                     )}
 
                   <form
                     onSubmit={(e) => {
                       e.preventDefault();
-                      handleAddThought(repo.name);
+                      handleAddThought(null);
                     }}
-                    className="flex flex-row space-x-2"
+                    className="mt-1 flex flex-row space-x-2"
                   >
                     <input
                       type="text"
-                      value={repoThoughtContents[repo.name] || ""}
-                      onChange={(e) =>
-                        setRepoThoughtContents((prev) => ({ ...prev, [repo.name]: e.target.value }))
-                      }
+                      value={userThoughtContent}
+                      onChange={(e) => setUserThoughtContent(e.target.value)}
                       placeholder="Add something..."
                       className="input-field flex-1 !py-1.5 !text-sm"
                     />
                     <button
                       type="submit"
-                      disabled={repoThoughtLoading[repo.name]}
+                      disabled={userThoughtLoading}
                       className="btn-primary disabled:opacity-50 !py-1.5 !text-sm"
                     >
-                      {repoThoughtLoading[repo.name] ? (
+                      {userThoughtLoading ? (
                         <span className="flex gap-1 items-center justify-center">
                           <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:0ms]" />
                           <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:150ms]" />
@@ -829,26 +805,135 @@ export default function UserProfilePage() {
                   </form>
                 </div>
               )}
-            </li>
-          ))}
-        </ul>
-        <div className="mt-6 mb-2 text-center">
-          <button
-            onClick={() => { setNavigating(true); router.push('/'); }}
-            disabled={navigating}
-            className="btn-dark sm:w-auto disabled:opacity-50"
-            style={{ cursor: navigating ? 'wait' : 'pointer' }}
-            suppressHydrationWarning
-          >
-            Return to home page
-          </button>
+            </section>
+
+            <h2 className="text-xl font-semibold mt-3 mb-4 text-text-primary text-center sm:text-left">Repositories</h2>
+            <ul className="space-y-3">
+              {repos.map((repo) => (
+                <li key={repo.name} className="card-compact">
+                  <div className="flex flex-row justify-between items-center flex-wrap">
+                    <a
+                      href={repo.html_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-accent font-medium hover:text-accent-hover break-words"
+                    >
+                      {repo.name}
+                    </a>
+                    <span className="text-xs text-text-muted ml-2 whitespace-nowrap">
+                      {formatDate(repo.updated_at)}
+                    </span>
+                  </div>
+                  <p className="text-text-secondary mt-1 break-words">{repo.description}</p>
+                  <div className="flex flex-row justify-between items-center mt-2 w-full">
+                    <div className="flex flex-wrap gap-4 text-sm text-text-muted">
+                      <span className="flex items-center gap-1">
+                        <Star className="w-3.5 h-3.5" /> {repo.stargazers_count}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <GitFork className="w-3.5 h-3.5" /> {repo.forks_count} 
+                      </span>
+                      {repo.language && (
+                        <span className="flex items-center gap-1">
+                          <Code2 className="w-3.5 h-3.5" /> {repo.language}
+                        </span>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={() => handleToggleRepoThoughts(repo.name)}
+                      className="btn-white text-sm text-center flex items-center justify-center gap-2"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <MessageSquare className="w-3.5 h-3.5 text-black fill-current" />
+                        {showRepoThoughts[repo.name] ? "Hide" : <span className="hidden sm:inline">Thoughts</span>}
+                      </span>
+                      <span className="bg-accent text-black text-xs px-2 py-0.5 rounded-full">
+                        {repoThoughtsTotal[repo.name]}
+                      </span>
+                    </button>
+                  </div>
+
+                  {showRepoThoughts[repo.name] && (
+                    <div className="mt-3 flex flex-col gap-3">
+                      {repoPaginationLoading[repo.name] && !(repoThoughts[repo.name]?.length) ? (
+                        <div className="flex items-center justify-center py-8">
+                          <span className="flex gap-1">
+                            <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:0ms]" />
+                            <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:150ms]" />
+                            <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:300ms]" />
+                          </span>
+                        </div>
+                      ) : (repoThoughts[repo.name] ?? []).length === 0 ? (
+                        <div className="bg-surface rounded-xl py-6 flex items-center justify-center" style={{ border: '1px solid var(--color-border)' }}>
+                          <p className="text-text-muted text-sm">No thoughts yet.</p>
+                        </div>
+                      ) : renderScrollableThoughts(
+                          repoThoughts[repo.name],
+                          (el) => { repoScrollRefs.current[repo.name] = el; },
+                          () => handleRepoThoughtsScroll(repo.name),
+                          repoPaginationLoading[repo.name] ?? false,
+                          () => loadNewerRepoThoughts(repo.name),
+                          () => loadOlderRepoThoughts(repo.name),
+                          repoNewestTimestamp[repo.name] ?? null,
+                          repoOldestTimestamp[repo.name] ?? null,
+                          repoNeedsFallbackRef.current[repo.name] ?? false
+                        )}
+
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          handleAddThought(repo.name);
+                        }}
+                        className="flex flex-row space-x-2"
+                      >
+                        <input
+                          type="text"
+                          value={repoThoughtContents[repo.name] || ""}
+                          onChange={(e) =>
+                            setRepoThoughtContents((prev) => ({ ...prev, [repo.name]: e.target.value }))
+                          }
+                          placeholder="Add something..."
+                          className="input-field flex-1 !py-1.5 !text-sm"
+                        />
+                        <button
+                          type="submit"
+                          disabled={repoThoughtLoading[repo.name]}
+                          className="btn-primary disabled:opacity-50 !py-1.5 !text-sm"
+                        >
+                          {repoThoughtLoading[repo.name] ? (
+                            <span className="flex gap-1 items-center justify-center">
+                              <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:0ms]" />
+                              <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:150ms]" />
+                              <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:300ms]" />
+                            </span>
+                          ) : "Share"}
+                        </button>
+                      </form>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+            <div className="mt-6 mb-2 text-center">
+              <button
+                onClick={() => { setNavigating(true); router.push('/'); }}
+                disabled={navigating}
+                className="btn-dark sm:w-auto disabled:opacity-50"
+                style={{ cursor: navigating ? 'wait' : 'pointer' }}
+                suppressHydrationWarning
+              >
+                Return to home page
+              </button>
+            </div>
+          </main>
+          <footer className="mt-auto bg-footer border-t border-border py-4 w-full">
+            <div className="max-w-4xl mx-auto text-center text-sm text-text-muted px-4">
+              © {new Date().getFullYear()} GitLens Community. All rights reserved.
+            </div>
+          </footer>
         </div>
-      </main>
-      <footer className="mt-auto bg-footer border-t border-border py-4 w-full">
-        <div className="max-w-4xl mx-auto text-center text-sm text-text-muted px-4">
-          © {new Date().getFullYear()} GitLens Community. All rights reserved.
-        </div>
-      </footer>
-    </div>
+      </div>
+    </div> 
   );
 }

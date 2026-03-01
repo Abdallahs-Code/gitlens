@@ -1,17 +1,10 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextRequest, NextResponse } from 'next/server';
+import { getGeminiKey } from '@/lib/api/api.server';
 
 const SUMMARIZER_THRESHOLD = 600;
 
-const geminiApiKey = process.env.GEMINI_API_KEY;
-
-if (!geminiApiKey) {
-  throw new Error("GEMINI_API_KEY is not set in environment variables");
-}
-
-const genAI = new GoogleGenerativeAI(geminiApiKey);
-
-async function summarizeJobDescription(rawText: string): Promise<string> {
+async function summarizeJobDescription(rawText: string, genAI: GoogleGenerativeAI): Promise<string> {
   const model = genAI.getGenerativeModel({
     model: "models/gemini-2.5-flash-lite",
   });
@@ -47,6 +40,16 @@ ${rawText}`;
 
 export async function POST(req: NextRequest) {
   try {
+    const user_id = Number(req.headers.get('user_id'));
+
+    const geminiKey = await getGeminiKey(user_id);
+
+    if (!geminiKey) {
+      return NextResponse.json({ error: "Gemini API key not found." }, { status: 400 });
+    }
+
+    const genAI = new GoogleGenerativeAI(geminiKey);
+
     const body = await req.json();
 
     if (!body.text || typeof body.text !== 'string') {
@@ -63,16 +66,21 @@ export async function POST(req: NextRequest) {
     if (rawText.length <= SUMMARIZER_THRESHOLD) {
       job_summary = rawText;
     } else {
-      job_summary = await summarizeJobDescription(rawText);
+      job_summary = await summarizeJobDescription(rawText, genAI);
     }
 
     return NextResponse.json({ success: true, data: job_summary }, { status: 200 });
   } catch (error) {
-    const err = error as Error;
-    console.error('Error processing job description:', err);
-    return NextResponse.json(
-      { success: false, error: err.message || 'Internal Server Error' },
-      { status: 500 }
-    );
+    const status = (error as { status?: number }).status;
+
+    if (status === 429) {
+      return NextResponse.json({ error: 'Too many requests.' }, { status: 429 });
+    }
+
+    if (status === 401 || status === 403) {
+      return NextResponse.json({ error: 'Your Gemini API key is invalid or expired.' }, { status: 401 });
+    }
+
+    return NextResponse.json({ error: 'Something went wrong summarizing the job description.' }, { status: 500 });
   }
 }

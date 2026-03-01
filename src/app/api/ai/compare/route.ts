@@ -1,14 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GitHubProfileComparison } from "@/lib/types";
+import { decrypt } from "@/lib/auth";
+import { getGeminiKey } from "@/lib/api/api.server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const geminiApiKey = process.env.GEMINI_API_KEY;
-
-if (!geminiApiKey) {
-  throw new Error("GEMINI_API_KEY is not set in environment variables");
-}
-
-const googleAI = new GoogleGenerativeAI(geminiApiKey);
 
 function createComparePrompt(
   user1: GitHubProfileComparison,
@@ -48,6 +42,16 @@ Output plain text only with normal sentences; do not use quotation marks, markdo
 
 export async function POST(req: NextRequest) {
   try {
+    const user_id = Number(req.headers.get('user_id'));
+
+    const geminiKey = await getGeminiKey(user_id);
+
+    if (!geminiKey) {
+      return NextResponse.json({ error: "Gemini API key not found." }, { status: 400 });
+    }
+
+    const googleAI = new GoogleGenerativeAI(geminiKey);
+    
     const { user1, user2 } = (await req.json()) as {
       user1: GitHubProfileComparison;
       user2: GitHubProfileComparison;
@@ -67,9 +71,16 @@ export async function POST(req: NextRequest) {
     const analysis = result.response.text();
 
     return NextResponse.json({ analysis });
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+
+    const status = (error as { status?: number }).status;
+
+    if (status === 429) {
+      return NextResponse.json({ error: 'Too many requests.' }, { status: 429 });
+    }
+
+    if (status === 401 || status === 403) {
+      return NextResponse.json({ error: 'Your Gemini API key is invalid or expired.' }, { status: 401 });
     }
 
     return NextResponse.json(

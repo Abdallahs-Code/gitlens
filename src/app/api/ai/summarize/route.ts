@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getGeminiKey } from "@/lib/api/api.server";
 import { GitHubProfile, GitHubRepo } from '@/lib/types';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-
-const geminiApiKey = process.env.GEMINI_API_KEY;
-
-if (!geminiApiKey) {
-  throw new Error("GEMINI_API_KEY is not set in environment variables");
-}
-
-const googleAI = new GoogleGenerativeAI(geminiApiKey);
 
 function analyzeRepos(repos: GitHubRepo[]) {
   const totalStars = repos.reduce((acc, r) => acc + r.stargazers_count, 0);
@@ -82,6 +75,16 @@ Output plain text only with normal sentences; do not use quotation marks, markdo
 
 export async function POST(req: NextRequest) {
   try {
+    const user_id = Number(req.headers.get('user_id'));
+
+    const geminiKey = await getGeminiKey(user_id);
+
+    if (!geminiKey) {
+      return NextResponse.json({ error: "Gemini API key not found." }, { status: 400 });
+    }
+
+    const googleAI = new GoogleGenerativeAI(geminiKey);
+    
     const { profile, repos } = await req.json() as { profile: GitHubProfile; repos: GitHubRepo[] };
 
     const prompt = createGitHubSummaryPrompt(profile, repos);
@@ -95,17 +98,17 @@ export async function POST(req: NextRequest) {
     const summary = result.response.text();
 
     return NextResponse.json({ summary });
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      );
+  } catch (error) {
+    const status = (error as { status?: number }).status;
+
+    if (status === 429) {
+      return NextResponse.json({ error: 'Too many requests.' }, { status: 429 });
     }
 
-    return NextResponse.json(
-      { error: "Something went wrong generating the summary" },
-      { status: 500 }
-    );
+    if (status === 401 || status === 403) {
+      return NextResponse.json({ error: 'Your Gemini API key is invalid or expired.' }, { status: 401 });
+    }
+
+    return NextResponse.json({ error: 'Something went wrong generating the summary.' }, { status: 500 });
   }
 }

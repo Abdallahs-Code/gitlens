@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 import { supabase } from '@/lib/services/supabase';
-import { decryptToken } from '@/lib/auth';
+import { decrypt } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (user) {
-      const githubToken = decryptToken(user.github_token_encrypted);
+      const githubToken = decrypt(user.github_token_encrypted);
 
       await fetch(`https://api.github.com/applications/${process.env.GITHUB_CLIENT_ID}/token`, {
         method: 'DELETE',
