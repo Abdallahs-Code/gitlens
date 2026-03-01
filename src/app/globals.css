@@ -188,17 +188,6 @@ a:hover {
   transition: border-color 0.2s !important;
 }
 
-@media (hover: none) and (pointer: coarse) {
-  .btn-primary:hover, .btn-primary:focus {
-    background-color: var(--color-accent) !important;
-  }
-
-  .btn-dark:hover, .btn-dark:focus {
-    background-color: var(--color-background-mid) !important;
-    opacity: 1 !important;
-  }
-
-  .btn-white:hover, .btn-white:focus {
-    background-color: var(--color-background-white) !important;
-  }
+.btn-primary, .btn-dark, .btn-white {
+  -webkit-tap-highlight-color: transparent;
 }
