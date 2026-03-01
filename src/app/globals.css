@@ -24,6 +24,8 @@
 
 * {
   border-color: var(--color-border);
+  -webkit-tap-highlight-color: transparent;
+  tap-highlight-color: transparent;
 }
 
 html {
@@ -186,8 +188,4 @@ a:hover {
   border-radius: 12px;
   padding: 1rem !important;
   transition: border-color 0.2s !important;
-}
-
-.btn-primary, .btn-dark, .btn-white {
-  -webkit-tap-highlight-color: transparent;
 }
