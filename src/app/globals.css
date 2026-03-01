@@ -188,7 +188,7 @@ a:hover {
   transition: border-color 0.2s !important;
 }
 
-@media (hover: none) {
+@media (hover: none) and (pointer: coarse) {
   .btn-primary:hover {
     background-color: var(--color-accent) !important;
   }
