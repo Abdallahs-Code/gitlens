@@ -187,3 +187,17 @@ a:hover {
   padding: 1rem !important;
   transition: border-color 0.2s !important;
 }
+
+@media (hover: none) {
+  .btn-primary:hover {
+    background-color: var(--color-accent) !important;
+  }
+
+  .btn-dark:hover {
+    opacity: 1 !important;
+  }
+
+  .btn-white:hover {
+    background-color: var(--color-background-white) !important;
+  }
+}
