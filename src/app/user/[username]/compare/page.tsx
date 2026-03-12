@@ -133,7 +133,7 @@ function CompareContent() {
               <button onClick={() => setShowKeyModal(false)} className="text-text-muted hover:text-text-primary text-xl leading-none cursor-pointer">✕</button>
             </div>
             <p className="text-text-secondary text-sm mb-5">
-              To use AI features, provide your Gemini API key. You can get one at{' '}
+              To use AI features, provide your Gemini API key. You can get a free one at{' '}
               <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-accent underline">
                 Google AI Studio
               </a>.
@@ -143,6 +143,7 @@ function CompareContent() {
               placeholder="Paste your Gemini API key"
               value={keyInput}
               onChange={(e) => setKeyInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && !keyLoading && keyInput.trim() && handleSetKey()}
               className="input-field w-full mb-3 !py-1.5 !text-sm"
             />
             <div className="flex gap-3">
@@ -195,7 +196,7 @@ function CompareContent() {
                 <button
                   type="submit"
                   disabled={loading || aiLoading || (!!displayedAnalysis && !typingDone) || !user1}
-                  className="btn-primary disabled:opacity-50 !py-1.5 !text-base font-bold whitespace-nowrap"
+                  className="btn-primary disabled:opacity-50 !py-1.5 !text-base font-bold whitespace-nowrap sm:!px-12"
                   suppressHydrationWarning
                 >
                   {loading ? (

@@ -131,7 +131,7 @@ export default function MatchPage() {
               <button onClick={() => setShowKeyModal(false)} className="text-text-muted hover:text-text-primary text-xl leading-none cursor-pointer">✕</button>
             </div>
             <p className="text-text-secondary text-sm mb-5">
-              To use AI features, provide your Gemini API key. You can get one at{' '}
+              To use AI features, provide your Gemini API key. You can get a free one at{' '}
               <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-accent underline">
                 Google AI Studio
               </a>.
@@ -141,6 +141,7 @@ export default function MatchPage() {
               placeholder="Paste your Gemini API key"
               value={keyInput}
               onChange={(e) => setKeyInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && !keyLoading && keyInput.trim() && handleSetKey()}
               className="input-field w-full mb-3 !py-1.5 !text-sm"
             />
             <div className="flex gap-3">
