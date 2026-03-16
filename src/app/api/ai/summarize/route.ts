@@ -4,6 +4,15 @@ import { GitHubProfile, GitHubRepo } from '@/lib/types';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 function analyzeRepos(repos: GitHubRepo[]) {
+  if (!repos || repos.length === 0) {
+    return {
+      totalStars: 0,
+      languages: {},
+      mostStarredRepo: null,
+      mostRecentRepo: null
+    };
+  }
+
   const totalStars = repos.reduce((acc, r) => acc + r.stargazers_count, 0);
 
   const languages: Record<string, number> = {};
@@ -61,8 +70,8 @@ Profile:
 
 Repository Summary:
 - Total Stars across all repos: ${totalStars}
-- Most starred repo: ${mostStarredRepo.name} (${mostStarredRepo.stargazers_count} stars) - ${mostStarredRepo.html_url}
-- Most recently updated repo: ${mostRecentRepo.name} (updated at ${mostRecentRepo.updated_at}) - ${mostRecentRepo.html_url}
+- Most starred repo: ${mostStarredRepo ? `${mostStarredRepo.name} (${mostStarredRepo.stargazers_count} stars) - ${mostStarredRepo.html_url}` : "N/A"}
+- Most recently updated repo: ${mostRecentRepo ? `${mostRecentRepo.name} (updated at ${mostRecentRepo.updated_at}) - ${mostRecentRepo.html_url}` : "N/A"}
 - Languages used: ${languageList}
 
 Full repository list (showing up to 50 repos):
