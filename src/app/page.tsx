@@ -331,7 +331,7 @@ export default function HomePage() {
                         />
                         <span
                           className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full"
-                          style={{ background: "#4eff91", border: '2px solid var(--color-background)' }}
+                          style={{ background: "#00ff6a", border: '2px solid var(--color-background)' }}
                         />
                       </div>
                     </div>
@@ -412,7 +412,7 @@ export default function HomePage() {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <MessageSquare className="w-5 h-5 text-accent" />
-                      <h2 className="text-xl font-semibold text-text-primary">Community Thoughts <span className="hidden sm:inline">About You</span></h2>
+                      <h2 className="text-xl font-semibold text-text-primary">Thoughts <span className="hidden sm:inline">About You</span></h2>
                     </div>
                     <span className="text-sm text-text-muted">{totalThoughts}</span>
                   </div>
@@ -556,7 +556,7 @@ export default function HomePage() {
                             <span
                               className="text-xs font-medium"
                               style={{
-                                color: item.date === "Live now" ? "#4eff91" :
+                                color: item.date === "Live now" ? "#00ff6a" :
                                       item.date === "Coming soon" ? "#22ffff" :
                                       "var(--color-text-muted)"
                               }}

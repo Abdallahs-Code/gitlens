@@ -180,3 +180,8 @@ export const match = async (
   });
   return data.data ?? data;
 };
+
+export const checkLlmHealth = async (): Promise<boolean> => {
+  const { data } = await axios.get(`${API_BASE}/api/ai/health`);
+  return data.status === "online";
+};

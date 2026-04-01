@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { MatchResult, ProfileAnalysisResult } from "@/lib/types";
-import { analyzeJobDescription, analyzeGitHubProfile, match, setGeminiKey } from "@/lib/api/api.client";
+import { analyzeJobDescription, analyzeGitHubProfile, match, setGeminiKey, checkLlmHealth } from "@/lib/api/api.client";
 import { Sparkles, ChevronDown, ChevronUp, CheckCircle, AlertCircle } from "lucide-react";
 
 const verdictStyles: Record<MatchResult["verdict"], { color: string; bg: string }> = {
@@ -50,6 +50,12 @@ export default function MatchPage() {
     setTypingDone(false);
 
     try {
+      const isOnline = await checkLlmHealth();
+      if (!isOnline) {
+        setError("llm");
+        return;
+      }
+      
       let jobResult: string;
       let profileResult: ProfileAnalysisResult;
 
