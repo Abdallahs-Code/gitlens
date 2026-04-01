@@ -23,6 +23,7 @@ export default function HomePage() {
   const [githubLoading, setGithubLoading] = useState(false);
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [keyInput, setKeyInput] = useState('');
+  const [keyDisplay, setKeyDisplay] = useState('');
   const [keyLoading, setKeyLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -160,6 +161,16 @@ export default function HomePage() {
     }
   };
 
+  const handleKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setKeyInput(val);
+    if (val.length > 4) {
+      setKeyDisplay('*'.repeat(35) + val.slice(-4));
+    } else {
+      setKeyDisplay(val);
+    }
+  };
+
   const handleSetKey = async () => {
     if (!keyInput.trim()) return;
     setKeyLoading(true);
@@ -167,6 +178,8 @@ export default function HomePage() {
       const success = await setGeminiKey(keyInput.trim());
       if (success) {
         setShowKeyModal(false);
+        setKeyInput('');
+        setKeyDisplay('');
       }
     } finally {
       setKeyLoading(false);
@@ -242,7 +255,7 @@ export default function HomePage() {
     <div className="relative">
       {showKeyModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-background rounded-3xl shadow-xl p-8 max-w-md w-full mx-4" style={{ border: '1px solid var(--color-border)' }}>
+          <div className="bg-background rounded-3xl shadow-xl p-8 max-w-sm w-full mx-4" style={{ border: '1px solid var(--color-border)' }}>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-accent" />
@@ -259,8 +272,8 @@ export default function HomePage() {
             <input
               type="text"
               placeholder="Paste your Gemini API key"
-              value={keyInput}
-              onChange={(e) => setKeyInput(e.target.value)}
+              value={keyDisplay}
+              onChange={handleKeyChange}
               onKeyDown={(e) => e.key === 'Enter' && !keyLoading && keyInput.trim() && handleSetKey()}
               className="input-field w-full mb-3 !py-1.5 !text-sm"
             />
