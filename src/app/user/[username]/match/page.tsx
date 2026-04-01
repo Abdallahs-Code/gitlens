@@ -216,7 +216,7 @@ export default function MatchPage() {
                   {error === "llm" ? (
                     <>
                       This service is currently offline. Contact the&nbsp;
-                      <a href="https://www.linkedin.com/in/abdallah-a-mahmoud-188701311/" target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-hover underline">
+                      <a href="https://www.linkedin.com/in/abdallah-mahmoud-188701311/" target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-hover underline">
                         developer
                       </a>
                       &nbsp;to start the fine-tuned model server.
