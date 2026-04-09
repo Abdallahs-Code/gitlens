@@ -654,22 +654,6 @@ export default function UserProfilePage() {
                   )}
                 </button>
                 <button
-                  onClick={handleCompare}
-                  disabled={compareLoading}
-                  className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-1.5 sm:gap-2 !px-3 sm:!px-6 !text-sm sm:!text-base"
-                >
-                  <GitCompare className="w-4 h-4" />
-                  {compareLoading ? (
-                    <span className="flex gap-1 items-center justify-center">
-                      <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:0ms]" />
-                      <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:150ms]" />
-                      <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:300ms]" />
-                    </span>
-                  ) : (
-                    "Compare"
-                  )}
-                </button>
-                <button
                   onClick={handleMatch}
                   disabled={matchLoading}
                   className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-1.5 sm:gap-2 !px-3 sm:!px-6 !text-sm sm:!text-base"
@@ -683,6 +667,22 @@ export default function UserProfilePage() {
                     </span>
                   ) : (
                     "Match"
+                  )}
+                </button>
+                <button
+                  onClick={handleCompare}
+                  disabled={compareLoading}
+                  className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-1.5 sm:gap-2 !px-3 sm:!px-6 !text-sm sm:!text-base"
+                >
+                  <GitCompare className="w-4 h-4" />
+                  {compareLoading ? (
+                    <span className="flex gap-1 items-center justify-center">
+                      <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:0ms]" />
+                      <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:150ms]" />
+                      <span className="w-2 h-2 rounded-full bg-black animate-bounce [animation-delay:300ms]" />
+                    </span>
+                  ) : (
+                    "Compare"
                   )}
                 </button>
               </div>
