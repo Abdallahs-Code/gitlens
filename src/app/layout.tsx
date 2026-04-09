@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GitLens",
+  title: "GitVision",
   description: "Search and analyze GitHub profiles",
   icons: {
     icon: "favicon.ico",

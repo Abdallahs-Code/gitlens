@@ -406,7 +406,7 @@ function CompareContent() {
 
           <footer className="mt-auto bg-footer border-t border-border py-4">
             <div className="max-w-4xl mx-auto text-center text-sm text-text-muted">
-              © {new Date().getFullYear()} GitLens Community. All rights reserved.
+              © {new Date().getFullYear()} GitVision Community. All rights reserved.
             </div>
           </footer>
         </div>

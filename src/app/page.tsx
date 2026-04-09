@@ -227,7 +227,7 @@ export default function HomePage() {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center -translate-y-10 p-6 bg-background text-text-primary">
         <h1 className="flex items-center text-5xl font-extrabold mb-8 text-center gap-4">
-          Welcome to GitLens
+          Welcome to GitVision
           <img src="/./favicon.ico" alt="Logo" className="w-12 h-12" />
         </h1>
         <p className="text-lg mb-8 text-center max-w-md">
@@ -311,7 +311,7 @@ export default function HomePage() {
                 <div className="flex items-center gap-3">
                   <img src="/./favicon.ico" alt="Logo" className="w-9 h-9" />
                   <div className="flex flex-col leading-tight">
-                    <span className="text-lg font-bold text-text-primary tracking-tight">GitLens</span>
+                    <span className="text-lg font-bold text-text-primary tracking-tight">GitVision</span>
                   </div>
                 </div>
 
@@ -578,7 +578,7 @@ export default function HomePage() {
 
           <footer className="mt-auto bg-footer border-t border-border py-4">
             <div className="max-w-6xl mx-auto text-center text-sm text-text-muted px-4">
-              © {new Date().getFullYear()} GitLens Community. All rights reserved.
+              © {new Date().getFullYear()} GitVision Community. All rights reserved.
             </div>
           </footer>
         </div>

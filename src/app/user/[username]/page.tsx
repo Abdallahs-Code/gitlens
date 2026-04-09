@@ -942,7 +942,7 @@ export default function UserProfilePage() {
           </main>
           <footer className="mt-auto bg-footer border-t border-border py-4 w-full">
             <div className="max-w-4xl mx-auto text-center text-sm text-text-muted px-4">
-              © {new Date().getFullYear()} GitLens Community. All rights reserved.
+              © {new Date().getFullYear()} GitVision Community. All rights reserved.
             </div>
           </footer>
         </div>
